@@ -1,0 +1,1441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-title" content="Wellness Hub"/>
+<title>Wellness Hub</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css"/>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/htm@3/dist/htm.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;background:#f5f5f0;min-height:100vh}
+input,select,button,textarea{font-family:inherit}
+input:focus,select:focus,textarea:focus{outline:none;border-color:rgba(0,0,0,0.4)!important}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+// -- BUILT-IN FOOD DATABASE (700+ foods) --
+// cal/pro/carb/fat per 100g or 100ml | itemG = weight of 1 item | cupG = weight of 1 cup
+const FOOD_DB = [
+  // -- KENYAN DISHES & STAPLES --
+  { name: "Ugali (maize, cooked)", cal: 110, pro: 2.3, carb: 24, fat: 0.4 },
+  { name: "Ugali (millet, cooked)", cal: 118, pro: 3, carb: 26, fat: 1 },
+  { name: "Ugali (sorghum, cooked)", cal: 112, pro: 3.2, carb: 24, fat: 1 },
+  { name: "Sukuma Wiki (cooked)", cal: 32, pro: 3, carb: 5.4, fat: 0.6, cupG: 130 },
+  { name: "Terere (amaranth greens, cooked)", cal: 36, pro: 3.5, carb: 4.5, fat: 0.5 },
+  { name: "Managu (black nightshade, cooked)", cal: 35, pro: 3.5, carb: 4, fat: 0.5 },
+  { name: "Saga / Cowpea Leaves (cooked)", cal: 42, pro: 4, carb: 5, fat: 0.6 },
+  { name: "Kunde (cowpea leaves, cooked)", cal: 44, pro: 4.2, carb: 5.5, fat: 0.6 },
+  { name: "Mchicha (amaranth/spinach stew)", cal: 45, pro: 4, carb: 5, fat: 2 },
+  { name: "Mboga za Kienyeji (mixed local greens)", cal: 38, pro: 3.5, carb: 5, fat: 0.5 },
+  { name: "Pumpkin Leaves / Maboga (cooked)", cal: 42, pro: 4, carb: 6, fat: 0.5 },
+  { name: "Githeri (maize and beans)", cal: 155, pro: 8, carb: 26, fat: 2, cupG: 200 },
+  { name: "Githeri with Potatoes", cal: 145, pro: 6, carb: 26, fat: 2 },
+  { name: "Irio (mashed peas, potato and corn)", cal: 120, pro: 4, carb: 22, fat: 2, cupG: 200 },
+  { name: "Mukimo (mashed potato and greens)", cal: 115, pro: 3.5, carb: 22, fat: 2 },
+  { name: "Matoke / Ndizi (green banana, cooked)", cal: 89, pro: 1.5, carb: 23, fat: 0.1 },
+  { name: "Nyama Choma (beef)", cal: 250, pro: 28, carb: 0, fat: 15 },
+  { name: "Nyama Choma (goat)", cal: 245, pro: 27, carb: 0, fat: 15 },
+  { name: "Nyama Choma (chicken / kienyeji)", cal: 215, pro: 25, carb: 0, fat: 12 },
+  { name: "Mutura (blood sausage)", cal: 290, pro: 22, carb: 3, fat: 21, itemG: 80, note: "~1 piece" },
+  { name: "Smokie Pasua (Kenyan sausage)", cal: 290, pro: 14, carb: 8, fat: 23, itemG: 100, note: "~1 smokie" },
+  { name: "Pilau (Kenyan spiced rice)", cal: 195, pro: 5, carb: 33, fat: 5.5, cupG: 190 },
+  { name: "Biryani / Biriani (chicken)", cal: 190, pro: 12, carb: 24, fat: 5, cupG: 200 },
+  { name: "Wali wa Nazi (coconut rice)", cal: 190, pro: 3, carb: 32, fat: 7, cupG: 195 },
+  { name: "Chapati (Kenyan)", cal: 265, pro: 7.5, carb: 42, fat: 7.5, itemG: 60, note: "~1 chapati" },
+  { name: "Mandazi", cal: 310, pro: 6, carb: 48, fat: 11, itemG: 50, note: "~1 mandazi" },
+  { name: "Mahamri (coconut doughnut)", cal: 340, pro: 5.5, carb: 50, fat: 14, itemG: 55, note: "~1 piece" },
+  { name: "Vitumbua (rice pancakes)", cal: 230, pro: 4.5, carb: 38, fat: 7, itemG: 35, note: "~1 piece" },
+  { name: "Viazi Karai / Bhajia (potato fritters)", cal: 295, pro: 4.5, carb: 38, fat: 14, itemG: 60, note: "~1 piece" },
+  { name: "Samosa (meat)", cal: 200, pro: 8, carb: 18, fat: 11, itemG: 70, note: "~1 samosa" },
+  { name: "Samosa (vegetable)", cal: 160, pro: 4, carb: 20, fat: 8, itemG: 60, note: "~1 samosa" },
+  { name: "Kachumbari (tomato onion salsa)", cal: 28, pro: 1.2, carb: 5.5, fat: 0.5, cupG: 150 },
+  { name: "Chicken Stew (Kenyan)", cal: 150, pro: 18, carb: 5, fat: 7, cupG: 245 },
+  { name: "Wet Fry Chicken", cal: 200, pro: 22, carb: 6, fat: 10, cupG: 200 },
+  { name: "Wet Fry Beef", cal: 220, pro: 24, carb: 5, fat: 12, cupG: 200 },
+  { name: "Beef Stew (Kenyan)", cal: 185, pro: 16, carb: 8, fat: 10, cupG: 245 },
+  { name: "Goat Stew", cal: 200, pro: 22, carb: 6, fat: 10, cupG: 245 },
+  { name: "Goat Meat (roasted)", cal: 143, pro: 27, carb: 0, fat: 3 },
+  { name: "Lamb Stew", cal: 195, pro: 17, carb: 9, fat: 11, cupG: 245 },
+  { name: "Matumbo / Tripe (cooked)", cal: 96, pro: 14, carb: 0, fat: 4 },
+  { name: "Ndengu (green grams, cooked)", cal: 105, pro: 7, carb: 19, fat: 0.4, cupG: 200 },
+  { name: "Dengu (split lentils, cooked)", cal: 116, pro: 9, carb: 20, fat: 0.4, cupG: 200 },
+  { name: "Maharagwe (red beans, cooked)", cal: 127, pro: 9, carb: 23, fat: 0.5, cupG: 177 },
+  { name: "Njahi (black beans, cooked)", cal: 116, pro: 8, carb: 20, fat: 0.5, cupG: 175 },
+  { name: "Njahe (lablab beans, cooked)", cal: 118, pro: 8.5, carb: 21, fat: 0.5 },
+  { name: "Minji (peas, cooked)", cal: 81, pro: 5.4, carb: 14, fat: 0.4, cupG: 160 },
+  { name: "Omena (lake sardines, dried)", cal: 313, pro: 54, carb: 0, fat: 10 },
+  { name: "Omena (lake sardines, cooked)", cal: 185, pro: 30, carb: 2, fat: 7 },
+  { name: "Tilapia (whole, grilled)", cal: 128, pro: 26, carb: 0, fat: 2.7, itemG: 400, note: "~1 whole fish" },
+  { name: "Nile Perch (grilled)", cal: 135, pro: 24, carb: 0, fat: 4 },
+  { name: "Ngwaci / Sweet Potato (boiled)", cal: 86, pro: 1.6, carb: 20, fat: 0.1, itemG: 130, note: "~1 medium" },
+  { name: "Nduma / Arrowroot (boiled)", cal: 65, pro: 2.8, carb: 14, fat: 0.2, itemG: 80, note: "~1 piece" },
+  { name: "Muogo / Cassava (boiled)", cal: 160, pro: 1.4, carb: 38, fat: 0.3 },
+  { name: "Mahindi (boiled maize cob)", cal: 96, pro: 3.4, carb: 21, fat: 1.5, itemG: 90, note: "~1 cob" },
+  { name: "Mahindi ya Kuchoma (roasted maize)", cal: 120, pro: 4, carb: 25, fat: 2, itemG: 85, note: "~1 cob" },
+  { name: "Kienyeji Chicken (free range, grilled)", cal: 180, pro: 30, carb: 0, fat: 6 },
+  { name: "Mursik (fermented milk, Kalenjin)", cal: 68, pro: 3.3, carb: 5, fat: 3.8, cupG: 240 },
+  { name: "Mtindi / Mala (soured milk)", cal: 60, pro: 3.2, carb: 4.7, fat: 3.3, cupG: 244 },
+  { name: "Uji wa Mtama (sorghum porridge)", cal: 52, pro: 1.8, carb: 11, fat: 0.5, cupG: 244 },
+  { name: "Uji wa Pembe (maize porridge)", cal: 55, pro: 1.2, carb: 12, fat: 0.3, cupG: 244 },
+  { name: "Uji wa Wimbi (finger millet porridge)", cal: 58, pro: 2, carb: 12, fat: 0.5, cupG: 244 },
+  { name: "Dawa (ginger lemon honey drink)", cal: 35, pro: 0.1, carb: 9, fat: 0, itemG: 240, note: "~1 glass" },
+  { name: "Mkate wa Kumimina (Swahili bread)", cal: 265, pro: 8, carb: 49, fat: 4 },
+  { name: "Rolex (chapati egg roll)", cal: 310, pro: 12, carb: 35, fat: 14, itemG: 150, note: "~1 roll" },
+  { name: "Mutura wa Nguruwe (pork sausage)", cal: 310, pro: 18, carb: 3, fat: 26, itemG: 80 },
+  { name: "Camel Meat (cooked)", cal: 160, pro: 24, carb: 0, fat: 7 },
+  // -- EAST AFRICAN REGIONAL --
+  { name: "Injera (Ethiopian flatbread)", cal: 150, pro: 4, carb: 30, fat: 0.8, itemG: 100, note: "~1 piece" },
+  { name: "Tibs (Ethiopian sauteed meat)", cal: 220, pro: 23, carb: 4, fat: 13 },
+  { name: "Doro Wat (Ethiopian chicken stew)", cal: 175, pro: 18, carb: 6, fat: 9, cupG: 244 },
+  { name: "Misir Wat (Ethiopian red lentils)", cal: 130, pro: 8.5, carb: 20, fat: 3, cupG: 244 },
+  { name: "Shiro (Ethiopian chickpea stew)", cal: 165, pro: 9, carb: 22, fat: 5, cupG: 244 },
+  { name: "Posho (Ugandan maize porridge)", cal: 108, pro: 2, carb: 24, fat: 0.3 },
+  { name: "Matoke (Ugandan plantain stew)", cal: 95, pro: 1.8, carb: 24, fat: 0.2 },
+  { name: "Groundnut Stew (East African)", cal: 320, pro: 15, carb: 14, fat: 25, cupG: 244 },
+  { name: "Sambusa (East African samosa)", cal: 180, pro: 6, carb: 20, fat: 9, itemG: 65, note: "~1 piece" },
+  { name: "Mandazi (Tanzanian)", cal: 310, pro: 6, carb: 48, fat: 11, itemG: 50 },
+  { name: "Ugali ya Pembe (Tanzanian)", cal: 110, pro: 2.3, carb: 24, fat: 0.4 },
+  { name: "Pilipili Hoho Sauce", cal: 40, pro: 1.5, carb: 8, fat: 0.5 },
+  // -- WEST AFRICAN --
+  { name: "Jollof Rice (Nigerian)", cal: 185, pro: 3.5, carb: 32, fat: 5, cupG: 190 },
+  { name: "Egusi Soup", cal: 420, pro: 18, carb: 10, fat: 35, cupG: 244 },
+  { name: "Ogbono Soup", cal: 350, pro: 15, carb: 8, fat: 30, cupG: 244 },
+  { name: "Okra Soup", cal: 160, pro: 8, carb: 12, fat: 10, cupG: 244 },
+  { name: "Banga Soup (palm nut)", cal: 380, pro: 10, carb: 12, fat: 35, cupG: 244 },
+  { name: "Efo Riro (spinach stew)", cal: 195, pro: 14, carb: 8, fat: 13, cupG: 244 },
+  { name: "Moimoi (bean pudding)", cal: 155, pro: 11, carb: 16, fat: 5, itemG: 100, note: "~1 wrap" },
+  { name: "Akara (bean fritters)", cal: 290, pro: 12, carb: 25, fat: 16, itemG: 50, note: "~1 piece" },
+  { name: "Puff Puff", cal: 320, pro: 5, carb: 38, fat: 17, itemG: 40, note: "~1 piece" },
+  { name: "Suya (spiced beef skewer)", cal: 290, pro: 30, carb: 5, fat: 16, itemG: 80, note: "~1 skewer" },
+  { name: "Fufu (cassava)", cal: 267, pro: 0.6, carb: 65, fat: 0.3 },
+  { name: "Fufu (yam)", cal: 118, pro: 1.5, carb: 28, fat: 0.2 },
+  { name: "Eba / Garri", cal: 357, pro: 0.6, carb: 85, fat: 0.6 },
+  { name: "Amala (yam flour)", cal: 330, pro: 3.5, carb: 78, fat: 0.5 },
+  { name: "Banku (fermented corn dough)", cal: 145, pro: 3.5, carb: 32, fat: 0.8 },
+  { name: "Kenkey (fermented corn ball)", cal: 155, pro: 4, carb: 34, fat: 1, itemG: 130, note: "~1 ball" },
+  { name: "Waakye (rice and beans, Ghanaian)", cal: 160, pro: 7, carb: 28, fat: 2, cupG: 200 },
+  { name: "Kontomire Stew (Ghanaian)", cal: 195, pro: 10, carb: 9, fat: 14, cupG: 244 },
+  { name: "Kelewele (spiced fried plantain)", cal: 240, pro: 1.5, carb: 44, fat: 8, cupG: 130 },
+  { name: "Chin Chin", cal: 480, pro: 8, carb: 60, fat: 23, cupG: 80 },
+  { name: "Pepper Soup (goat meat)", cal: 120, pro: 16, carb: 3, fat: 5, cupG: 244 },
+  { name: "Groundnut Soup (West African)", cal: 380, pro: 18, carb: 10, fat: 30, cupG: 244 },
+  { name: "Ogiri / Dawadawa (fermented locust bean)", cal: 350, pro: 30, carb: 15, fat: 18 },
+  // -- SOUTHERN AFRICAN --
+  { name: "Sadza (Zimbabwean)", cal: 110, pro: 2.3, carb: 24, fat: 0.4 },
+  { name: "Pap (South African)", cal: 110, pro: 2.3, carb: 24, fat: 0.4 },
+  { name: "Umngqusho (samp and beans)", cal: 165, pro: 8, carb: 28, fat: 2, cupG: 200 },
+  { name: "Boerewors (braai sausage)", cal: 350, pro: 16, carb: 2, fat: 31, itemG: 100, note: "~1 sausage" },
+  { name: "Bobotie (South African curry bake)", cal: 195, pro: 16, carb: 11, fat: 10 },
+  { name: "Bunny Chow (bread curry)", cal: 280, pro: 12, carb: 36, fat: 9, itemG: 300, note: "~1 half loaf" },
+  { name: "Chakalaka (spiced vegetable relish)", cal: 65, pro: 2, carb: 10, fat: 2 },
+  { name: "Morogo (wild spinach, cooked)", cal: 35, pro: 3.5, carb: 4, fat: 0.5 },
+  { name: "Mopane Worms (dried)", cal: 430, pro: 47, carb: 15, fat: 20 },
+  // -- NORTH AFRICAN --
+  { name: "Couscous (cooked)", cal: 112, pro: 3.8, carb: 23, fat: 0.2, cupG: 157 },
+  { name: "Couscous with vegetables", cal: 130, pro: 4.5, carb: 25, fat: 2.5, cupG: 200 },
+  { name: "Tagine (lamb)", cal: 220, pro: 18, carb: 12, fat: 11, cupG: 244 },
+  { name: "Tagine (chicken)", cal: 175, pro: 18, carb: 10, fat: 8, cupG: 244 },
+  { name: "Shakshuka (eggs in tomato sauce)", cal: 130, pro: 8, carb: 8, fat: 8, cupG: 244 },
+  { name: "Falafel", cal: 333, pro: 13, carb: 32, fat: 18, itemG: 17, note: "~1 ball" },
+  { name: "Hummus", cal: 177, pro: 8, carb: 14, fat: 10 },
+  { name: "Tabbouleh", cal: 86, pro: 2.5, carb: 11, fat: 4 },
+  { name: "Baba Ghanoush", cal: 96, pro: 2.4, carb: 9, fat: 6 },
+  { name: "Ful Medames (fava beans)", cal: 110, pro: 7.6, carb: 18, fat: 0.5, cupG: 241 },
+  // -- POULTRY --
+  { name: "Chicken Breast (grilled)", cal: 165, pro: 31, carb: 0, fat: 3.6, itemG: 150, note: "~1 medium breast" },
+  { name: "Chicken Breast (raw)", cal: 120, pro: 22, carb: 0, fat: 2.6, itemG: 150 },
+  { name: "Chicken Thigh (grilled)", cal: 209, pro: 26, carb: 0, fat: 11, itemG: 100 },
+  { name: "Chicken Drumstick (grilled)", cal: 195, pro: 28, carb: 0, fat: 9, itemG: 110, note: "~1 drumstick" },
+  { name: "Chicken Wings (grilled)", cal: 203, pro: 30, carb: 0, fat: 9, itemG: 35, note: "~1 wing" },
+  { name: "Chicken Liver (cooked)", cal: 172, pro: 26, carb: 1, fat: 6.5 },
+  { name: "Chicken Gizzard (cooked)", cal: 154, pro: 27, carb: 1.4, fat: 3.7 },
+  { name: "Turkey Breast (grilled)", cal: 157, pro: 30, carb: 0, fat: 3.5 },
+  { name: "Duck (roasted)", cal: 337, pro: 19, carb: 0, fat: 28 },
+  // -- BEEF --
+  { name: "Beef Mince (lean, cooked)", cal: 218, pro: 26, carb: 0, fat: 12 },
+  { name: "Beef Mince (regular, cooked)", cal: 254, pro: 24, carb: 0, fat: 17 },
+  { name: "Beef Steak (sirloin, grilled)", cal: 207, pro: 27, carb: 0, fat: 10, itemG: 200, note: "~1 steak" },
+  { name: "Beef Steak (ribeye, grilled)", cal: 291, pro: 24, carb: 0, fat: 21, itemG: 200 },
+  { name: "Beef Steak (fillet)", cal: 196, pro: 28, carb: 0, fat: 9, itemG: 180 },
+  { name: "Beef Roast", cal: 259, pro: 26, carb: 0, fat: 17 },
+  { name: "Beef Ribs (braised)", cal: 267, pro: 26, carb: 0, fat: 18 },
+  { name: "Beef Liver", cal: 175, pro: 27, carb: 4, fat: 5 },
+  { name: "Beef Tripe / Matumbo (cooked)", cal: 96, pro: 14, carb: 0, fat: 4 },
+  { name: "Beef Biltong / Jerky", cal: 286, pro: 55, carb: 0, fat: 7 },
+  { name: "Corned Beef (canned)", cal: 250, pro: 25, carb: 1, fat: 16 },
+  { name: "Goat Meat (roasted)", cal: 143, pro: 27, carb: 0, fat: 3 },
+  { name: "Camel Meat (cooked)", cal: 160, pro: 24, carb: 0, fat: 7 },
+  // -- PORK & LAMB --
+  { name: "Pork Chop (grilled)", cal: 231, pro: 25, carb: 0, fat: 14, itemG: 150 },
+  { name: "Pork Belly (roasted)", cal: 395, pro: 19, carb: 0, fat: 35 },
+  { name: "Bacon (1 rasher, grilled)", cal: 541, pro: 37, carb: 0, fat: 42, itemG: 28, note: "~1 rasher" },
+  { name: "Sausage (pork, grilled)", cal: 301, pro: 16, carb: 5, fat: 25, itemG: 60, note: "~1 sausage" },
+  { name: "Ham (cooked)", cal: 145, pro: 21, carb: 1.5, fat: 6 },
+  { name: "Lamb Chop (grilled)", cal: 268, pro: 24, carb: 0, fat: 19, itemG: 150 },
+  { name: "Lamb (roasted)", cal: 258, pro: 25, carb: 0, fat: 17 },
+  // -- FISH & SEAFOOD --
+  { name: "Salmon (baked)", cal: 208, pro: 20, carb: 0, fat: 13, itemG: 150, note: "~1 fillet" },
+  { name: "Tilapia (grilled)", cal: 128, pro: 26, carb: 0, fat: 2.7, itemG: 130, note: "~1 fillet" },
+  { name: "Tuna (canned in water)", cal: 116, pro: 26, carb: 0, fat: 1 },
+  { name: "Tuna (canned in oil)", cal: 198, pro: 29, carb: 0, fat: 9 },
+  { name: "Sardines (canned in tomato)", cal: 162, pro: 19, carb: 1, fat: 9 },
+  { name: "Mackerel (grilled)", cal: 305, pro: 19, carb: 0, fat: 25 },
+  { name: "Cod (baked)", cal: 105, pro: 23, carb: 0, fat: 0.9, itemG: 150 },
+  { name: "Catfish (grilled)", cal: 144, pro: 20, carb: 0, fat: 6 },
+  { name: "Stockfish (dried, rehydrated)", cal: 130, pro: 29, carb: 0, fat: 1 },
+  { name: "Prawns / Shrimp (boiled)", cal: 99, pro: 24, carb: 0.2, fat: 0.3 },
+  { name: "Crab (cooked)", cal: 97, pro: 19, carb: 0, fat: 2 },
+  { name: "Lobster (cooked)", cal: 97, pro: 20, carb: 0.5, fat: 1 },
+  { name: "Calamari / Squid (grilled)", cal: 92, pro: 16, carb: 3, fat: 1.4 },
+  // -- EGGS --
+  { name: "Boiled Egg", cal: 155, pro: 13, carb: 1.1, fat: 11, itemG: 50, note: "~1 large egg" },
+  { name: "Fried Egg", cal: 196, pro: 13, carb: 0.8, fat: 15, itemG: 46, note: "~1 large egg" },
+  { name: "Scrambled Eggs", cal: 182, pro: 12, carb: 1.5, fat: 14, itemG: 100, note: "~2 eggs" },
+  { name: "Poached Egg", cal: 143, pro: 13, carb: 0.7, fat: 10, itemG: 50 },
+  { name: "Omelette (plain, 2 eggs)", cal: 154, pro: 11, carb: 0.4, fat: 12, itemG: 100 },
+  { name: "Egg White", cal: 52, pro: 11, carb: 0.7, fat: 0.2, itemG: 33 },
+  // -- PLANT PROTEINS --
+  { name: "Tofu (firm)", cal: 76, pro: 8, carb: 2, fat: 4 },
+  { name: "Tofu (silken)", cal: 55, pro: 5, carb: 3, fat: 2 },
+  { name: "Lentils (cooked)", cal: 116, pro: 9, carb: 20, fat: 0.4, cupG: 200 },
+  { name: "Red Lentils (cooked)", cal: 111, pro: 9, carb: 19, fat: 0.4, cupG: 200 },
+  { name: "Chickpeas (cooked)", cal: 164, pro: 9, carb: 27, fat: 2.6, cupG: 164 },
+  { name: "Black Beans (cooked)", cal: 132, pro: 9, carb: 24, fat: 0.5, cupG: 172 },
+  { name: "Kidney Beans (cooked)", cal: 127, pro: 9, carb: 23, fat: 0.5, cupG: 177 },
+  { name: "Edamame (boiled)", cal: 121, pro: 11, carb: 9, fat: 5, cupG: 155 },
+  { name: "Tempeh", cal: 193, pro: 19, carb: 9, fat: 11 },
+  // -- RICE & GRAINS --
+  { name: "White Rice (cooked)", cal: 130, pro: 2.7, carb: 28, fat: 0.3, cupG: 186 },
+  { name: "Brown Rice (cooked)", cal: 123, pro: 2.7, carb: 26, fat: 1, cupG: 195 },
+  { name: "Basmati Rice (cooked)", cal: 121, pro: 3.5, carb: 25, fat: 0.4, cupG: 186 },
+  { name: "Jasmine Rice (cooked)", cal: 129, pro: 2.6, carb: 28, fat: 0.3, cupG: 186 },
+  { name: "Pasta (cooked)", cal: 158, pro: 5.8, carb: 31, fat: 0.9, cupG: 140 },
+  { name: "Spaghetti (cooked)", cal: 158, pro: 5.8, carb: 31, fat: 0.9, cupG: 140 },
+  { name: "Oats (cooked with water)", cal: 71, pro: 2.5, carb: 12, fat: 1.5, cupG: 234 },
+  { name: "Oats (dry / rolled)", cal: 389, pro: 17, carb: 66, fat: 7, cupG: 81 },
+  { name: "Millet (cooked)", cal: 119, pro: 3.5, carb: 23, fat: 1, cupG: 174 },
+  { name: "Sorghum (cooked)", cal: 110, pro: 3.7, carb: 22, fat: 1.1, cupG: 192 },
+  { name: "Quinoa (cooked)", cal: 120, pro: 4.4, carb: 21, fat: 1.9, cupG: 185 },
+  { name: "Couscous (cooked)", cal: 112, pro: 3.8, carb: 23, fat: 0.2, cupG: 157 },
+  { name: "Bulgur Wheat (cooked)", cal: 83, pro: 3.1, carb: 19, fat: 0.2, cupG: 182 },
+  { name: "Cornmeal / Maize Flour (dry)", cal: 362, pro: 8, carb: 76, fat: 3.6, cupG: 122 },
+  { name: "Finger Millet / Wimbi (flour, dry)", cal: 336, pro: 7.7, carb: 72, fat: 1.3 },
+  // -- BREAD & BAKED GOODS --
+  { name: "White Bread", cal: 265, pro: 9, carb: 51, fat: 3.2, itemG: 30, note: "~1 slice" },
+  { name: "Wholegrain Bread", cal: 247, pro: 12, carb: 41, fat: 4.2, itemG: 30, note: "~1 slice" },
+  { name: "Sourdough Bread", cal: 274, pro: 9, carb: 54, fat: 1.5, itemG: 35, note: "~1 slice" },
+  { name: "Pita Bread", cal: 275, pro: 9, carb: 54, fat: 1.2, itemG: 60, note: "~1 pita" },
+  { name: "Naan Bread", cal: 317, pro: 9, carb: 54, fat: 7, itemG: 90, note: "~1 piece" },
+  { name: "Bagel", cal: 250, pro: 10, carb: 49, fat: 1.5, itemG: 100, note: "~1 bagel" },
+  { name: "Croissant", cal: 406, pro: 8, carb: 45, fat: 21, itemG: 57, note: "~1 croissant" },
+  { name: "Pancake (plain)", cal: 227, pro: 6, carb: 28, fat: 10, itemG: 38, note: "~1 pancake" },
+  { name: "Waffle (plain)", cal: 291, pro: 8, carb: 37, fat: 13, itemG: 75, note: "~1 waffle" },
+  // -- POTATOES & TUBERS --
+  { name: "White Potato (boiled)", cal: 87, pro: 1.9, carb: 20, fat: 0.1, itemG: 150, note: "~1 medium" },
+  { name: "Sweet Potato (boiled)", cal: 86, pro: 1.6, carb: 20, fat: 0.1, itemG: 130, note: "~1 medium" },
+  { name: "French Fries / Chips", cal: 312, pro: 3.4, carb: 41, fat: 15, cupG: 134 },
+  { name: "Mashed Potato (with butter)", cal: 113, pro: 2, carb: 17, fat: 4.5, cupG: 210 },
+  { name: "Yam (boiled)", cal: 118, pro: 1.5, carb: 28, fat: 0.2 },
+  { name: "Yam (fried)", cal: 240, pro: 2, carb: 42, fat: 8 },
+  { name: "Cassava (boiled)", cal: 160, pro: 1.4, carb: 38, fat: 0.3 },
+  { name: "Cassava Leaves (cooked)", cal: 95, pro: 7, carb: 14, fat: 1 },
+  { name: "Plantain (boiled)", cal: 116, pro: 0.8, carb: 31, fat: 0.1, itemG: 120 },
+  { name: "Plantain (fried)", cal: 218, pro: 1.5, carb: 41, fat: 6, itemG: 100 },
+  { name: "Plantain (roasted)", cal: 130, pro: 1, carb: 34, fat: 0.2, itemG: 120 },
+  // -- VEGETABLES --
+  { name: "Spinach (raw)", cal: 23, pro: 2.9, carb: 3.6, fat: 0.4, cupG: 30 },
+  { name: "Spinach (cooked)", cal: 23, pro: 3, carb: 3.4, fat: 0.4, cupG: 180 },
+  { name: "Kale (raw)", cal: 49, pro: 4.3, carb: 9, fat: 0.9, cupG: 67 },
+  { name: "Collard Greens / Sukuma Wiki (cooked)", cal: 32, pro: 3, carb: 5.4, fat: 0.6, cupG: 190 },
+  { name: "Broccoli (steamed)", cal: 35, pro: 2.4, carb: 7, fat: 0.4, cupG: 156 },
+  { name: "Cauliflower (steamed)", cal: 25, pro: 2, carb: 5, fat: 0.3, cupG: 107 },
+  { name: "Cabbage (raw)", cal: 25, pro: 1.3, carb: 5.8, fat: 0.1, cupG: 89 },
+  { name: "Cabbage (cooked)", cal: 23, pro: 1.3, carb: 5, fat: 0.1, cupG: 150 },
+  { name: "Lettuce (romaine)", cal: 17, pro: 1.2, carb: 3.3, fat: 0.3, cupG: 47 },
+  { name: "Tomato (raw)", cal: 18, pro: 0.9, carb: 3.9, fat: 0.2, itemG: 123, note: "~1 medium" },
+  { name: "Cucumber (raw)", cal: 16, pro: 0.7, carb: 3.6, fat: 0.1, itemG: 200, note: "~1 whole" },
+  { name: "Bell Pepper (red)", cal: 31, pro: 1, carb: 6, fat: 0.3, itemG: 164, note: "~1 medium" },
+  { name: "Bell Pepper (green)", cal: 20, pro: 0.9, carb: 4.6, fat: 0.2, itemG: 164, note: "~1 medium" },
+  { name: "Onion (raw)", cal: 40, pro: 1.1, carb: 9.3, fat: 0.1, itemG: 110, note: "~1 medium" },
+  { name: "Garlic (raw)", cal: 149, pro: 6.4, carb: 33, fat: 0.5, itemG: 3, note: "~1 clove" },
+  { name: "Ginger (raw)", cal: 80, pro: 1.8, carb: 18, fat: 0.8 },
+  { name: "Carrot (raw)", cal: 41, pro: 0.9, carb: 10, fat: 0.2, itemG: 61, note: "~1 medium" },
+  { name: "Carrot (cooked)", cal: 35, pro: 0.8, carb: 8, fat: 0.2, cupG: 156 },
+  { name: "Peas (cooked)", cal: 81, pro: 5.4, carb: 14, fat: 0.4, cupG: 160 },
+  { name: "Sweetcorn (cooked)", cal: 96, pro: 3.4, carb: 21, fat: 1.5, cupG: 154 },
+  { name: "Sweetcorn on the cob", cal: 86, pro: 3.2, carb: 19, fat: 1.2, itemG: 90, note: "~1 cob" },
+  { name: "Green Beans (cooked)", cal: 35, pro: 1.9, carb: 7, fat: 0.3, cupG: 125 },
+  { name: "Courgette / Zucchini (raw)", cal: 17, pro: 1.2, carb: 3.1, fat: 0.3 },
+  { name: "Aubergine / Eggplant (cooked)", cal: 33, pro: 0.8, carb: 8, fat: 0.2 },
+  { name: "Mushrooms (raw)", cal: 22, pro: 3.1, carb: 3.3, fat: 0.3, cupG: 70 },
+  { name: "Mushrooms (sauteed)", cal: 26, pro: 1.8, carb: 3.1, fat: 1, cupG: 156 },
+  { name: "Beetroot (boiled)", cal: 44, pro: 1.7, carb: 10, fat: 0.2, itemG: 82, note: "~1 medium" },
+  { name: "Avocado", cal: 160, pro: 2, carb: 9, fat: 15, itemG: 200, note: "~1 whole avocado", cupG: 150 },
+  { name: "Okra (cooked)", cal: 33, pro: 2, carb: 7, fat: 0.2, cupG: 160 },
+  { name: "Pumpkin (boiled)", cal: 26, pro: 1, carb: 7, fat: 0.1, cupG: 245 },
+  { name: "Butternut Squash (roasted)", cal: 45, pro: 1, carb: 11, fat: 0.1, cupG: 205 },
+  { name: "Asparagus (cooked)", cal: 22, pro: 2.4, carb: 4, fat: 0.2, itemG: 18, note: "~1 spear" },
+  { name: "Celery (raw)", cal: 16, pro: 0.7, carb: 3, fat: 0.2, itemG: 40, note: "~1 stalk" },
+  // -- FRUITS --
+  { name: "Banana", cal: 89, pro: 1.1, carb: 23, fat: 0.3, itemG: 118, note: "~1 medium banana" },
+  { name: "Apple", cal: 52, pro: 0.3, carb: 14, fat: 0.2, itemG: 182, note: "~1 medium apple" },
+  { name: "Orange", cal: 47, pro: 0.9, carb: 12, fat: 0.1, itemG: 131, note: "~1 medium orange" },
+  { name: "Mango", cal: 60, pro: 0.8, carb: 15, fat: 0.4, itemG: 200, note: "~1 medium mango" },
+  { name: "Watermelon", cal: 30, pro: 0.6, carb: 7.6, fat: 0.2, cupG: 154 },
+  { name: "Pineapple", cal: 50, pro: 0.5, carb: 13, fat: 0.1, cupG: 165 },
+  { name: "Papaya / Pawpaw", cal: 43, pro: 0.5, carb: 11, fat: 0.3, cupG: 145 },
+  { name: "Strawberries", cal: 32, pro: 0.7, carb: 7.7, fat: 0.3, cupG: 152, itemG: 12 },
+  { name: "Blueberries", cal: 57, pro: 0.7, carb: 14, fat: 0.3, cupG: 148 },
+  { name: "Raspberries", cal: 52, pro: 1.2, carb: 12, fat: 0.7, cupG: 123 },
+  { name: "Grapes", cal: 67, pro: 0.6, carb: 17, fat: 0.4, cupG: 151 },
+  { name: "Kiwi", cal: 61, pro: 1.1, carb: 15, fat: 0.5, itemG: 76, note: "~1 kiwi" },
+  { name: "Pear", cal: 57, pro: 0.4, carb: 15, fat: 0.1, itemG: 178, note: "~1 pear" },
+  { name: "Peach", cal: 39, pro: 0.9, carb: 10, fat: 0.3, itemG: 150, note: "~1 peach" },
+  { name: "Plum", cal: 46, pro: 0.7, carb: 11, fat: 0.3, itemG: 66, note: "~1 plum" },
+  { name: "Guava", cal: 68, pro: 2.6, carb: 14, fat: 1, itemG: 100, note: "~1 guava" },
+  { name: "Passion Fruit", cal: 97, pro: 2.2, carb: 23, fat: 0.7, itemG: 18, note: "~1 passion fruit" },
+  { name: "Coconut (fresh flesh)", cal: 354, pro: 3.3, carb: 15, fat: 33, cupG: 80 },
+  { name: "Coconut Water", cal: 19, pro: 0.7, carb: 3.7, fat: 0.2, cupG: 240, itemG: 330, note: "~1 bottle" },
+  { name: "Dates (dried)", cal: 277, pro: 1.8, carb: 75, fat: 0.2, itemG: 24, note: "~1 date" },
+  { name: "Raisins", cal: 299, pro: 3.1, carb: 79, fat: 0.5, cupG: 165 },
+  { name: "Jackfruit (raw)", cal: 95, pro: 1.7, carb: 23, fat: 0.6 },
+  { name: "Lemon", cal: 29, pro: 1.1, carb: 9, fat: 0.3, itemG: 84, note: "~1 lemon" },
+  { name: "Lime", cal: 30, pro: 0.7, carb: 11, fat: 0.2, itemG: 67, note: "~1 lime" },
+  { name: "Tree Tomato / Tamarillo", cal: 31, pro: 1.5, carb: 7, fat: 0.1, itemG: 90, note: "~1 fruit" },
+  { name: "Soursop / Graviola", cal: 66, pro: 1, carb: 17, fat: 0.3 },
+  { name: "Baobab Fruit (pulp)", cal: 227, pro: 3.5, carb: 56, fat: 0.5 },
+  { name: "Tamarind", cal: 239, pro: 2.8, carb: 63, fat: 0.6 },
+  { name: "African Star Apple / Agbalumo", cal: 67, pro: 1.2, carb: 17, fat: 0.2, itemG: 40, note: "~1 fruit" },
+  // -- DAIRY --
+  { name: "Full Cream Milk", cal: 61, pro: 3.2, carb: 4.8, fat: 3.3, cupG: 244, itemG: 240, note: "~1 glass" },
+  { name: "Semi-Skimmed Milk", cal: 46, pro: 3.4, carb: 4.8, fat: 1.6, cupG: 244 },
+  { name: "Skimmed Milk", cal: 34, pro: 3.4, carb: 5, fat: 0.1, cupG: 244 },
+  { name: "Sour Milk / Mala (fermented)", cal: 60, pro: 3.2, carb: 4.7, fat: 3.3, cupG: 244 },
+  { name: "Oat Milk", cal: 45, pro: 1, carb: 6.5, fat: 1.5, cupG: 240 },
+  { name: "Almond Milk (unsweetened)", cal: 17, pro: 0.6, carb: 0.6, fat: 1.4, cupG: 240 },
+  { name: "Soy Milk", cal: 43, pro: 3.3, carb: 2.9, fat: 1.8, cupG: 240 },
+  { name: "Coconut Milk (canned)", cal: 197, pro: 2, carb: 6, fat: 21, cupG: 240 },
+  { name: "Greek Yoghurt (plain)", cal: 97, pro: 9, carb: 3.6, fat: 5, cupG: 245 },
+  { name: "Plain Yoghurt (full fat)", cal: 61, pro: 3.5, carb: 4.7, fat: 3.3, cupG: 245 },
+  { name: "Low Fat Yoghurt", cal: 56, pro: 4.5, carb: 7.7, fat: 0.6, cupG: 245 },
+  { name: "Cheddar Cheese", cal: 403, pro: 25, carb: 1.3, fat: 33, itemG: 28, note: "~1 slice" },
+  { name: "Mozzarella Cheese", cal: 280, pro: 22, carb: 2.2, fat: 22, itemG: 28 },
+  { name: "Feta Cheese", cal: 264, pro: 14, carb: 4, fat: 21 },
+  { name: "Cottage Cheese", cal: 98, pro: 11, carb: 3.4, fat: 4.3, cupG: 226 },
+  { name: "Cream Cheese", cal: 342, pro: 6, carb: 4, fat: 34 },
+  { name: "Butter", cal: 717, pro: 0.9, carb: 0.1, fat: 81, itemG: 14, note: "~1 tablespoon" },
+  { name: "Ghee", cal: 900, pro: 0, carb: 0, fat: 99 },
+  { name: "Ice Cream (vanilla)", cal: 207, pro: 3.5, carb: 24, fat: 11, cupG: 132 },
+  // -- OILS & FATS --
+  { name: "Olive Oil", cal: 884, pro: 0, carb: 0, fat: 100 },
+  { name: "Vegetable / Sunflower Oil", cal: 884, pro: 0, carb: 0, fat: 100 },
+  { name: "Coconut Oil", cal: 862, pro: 0, carb: 0, fat: 100 },
+  { name: "Palm Oil", cal: 884, pro: 0, carb: 0, fat: 100 },
+  { name: "Groundnut / Peanut Oil", cal: 884, pro: 0, carb: 0, fat: 100 },
+  { name: "Mayonnaise", cal: 680, pro: 1, carb: 0.6, fat: 75 },
+  // -- NUTS, SEEDS & BUTTERS --
+  { name: "Almonds", cal: 579, pro: 21, carb: 22, fat: 50, cupG: 143 },
+  { name: "Cashews", cal: 553, pro: 18, carb: 30, fat: 44, cupG: 137 },
+  { name: "Walnuts", cal: 654, pro: 15, carb: 14, fat: 65, cupG: 117 },
+  { name: "Groundnuts / Peanuts (roasted)", cal: 567, pro: 26, carb: 16, fat: 49, cupG: 146 },
+  { name: "Macadamia Nuts", cal: 718, pro: 8, carb: 14, fat: 76, cupG: 134 },
+  { name: "Pistachios", cal: 562, pro: 20, carb: 28, fat: 45, cupG: 123 },
+  { name: "Tiger Nuts / Chufas", cal: 396, pro: 5, carb: 78, fat: 10 },
+  { name: "Peanut Butter", cal: 588, pro: 25, carb: 20, fat: 50 },
+  { name: "Almond Butter", cal: 614, pro: 21, carb: 19, fat: 56 },
+  { name: "Chia Seeds", cal: 486, pro: 17, carb: 42, fat: 31 },
+  { name: "Flaxseeds / Linseed", cal: 534, pro: 18, carb: 29, fat: 42 },
+  { name: "Sesame Seeds", cal: 573, pro: 18, carb: 23, fat: 50 },
+  { name: "Pumpkin Seeds", cal: 559, pro: 30, carb: 11, fat: 49, cupG: 129 },
+  { name: "Sunflower Seeds", cal: 584, pro: 21, carb: 20, fat: 51, cupG: 128 },
+  // -- CONDIMENTS & SAUCES --
+  { name: "Tomato Ketchup", cal: 101, pro: 1.4, carb: 26, fat: 0.1 },
+  { name: "Soy Sauce", cal: 53, pro: 8, carb: 5, fat: 0.1 },
+  { name: "Hot Sauce / Pili Pili", cal: 12, pro: 0.6, carb: 2, fat: 0.5 },
+  { name: "Honey", cal: 304, pro: 0.3, carb: 82, fat: 0 },
+  { name: "Sugar (white)", cal: 387, pro: 0, carb: 100, fat: 0 },
+  { name: "Brown Sugar", cal: 380, pro: 0.1, carb: 98, fat: 0 },
+  { name: "Tomato Paste", cal: 82, pro: 4, carb: 19, fat: 0.5 },
+  { name: "Canned Tomatoes", cal: 24, pro: 1.2, carb: 4.8, fat: 0.2, cupG: 240 },
+  { name: "Coconut Cream", cal: 330, pro: 3.6, carb: 6, fat: 35 },
+  { name: "Chocolate Spread (Nutella)", cal: 539, pro: 6, carb: 58, fat: 31 },
+  // -- SNACKS & TREATS --
+  { name: "Dark Chocolate (70 percent)", cal: 598, pro: 8, carb: 46, fat: 43, itemG: 30, note: "~1 small bar" },
+  { name: "Milk Chocolate", cal: 535, pro: 7.7, carb: 59, fat: 30, itemG: 30, note: "~1 small bar" },
+  { name: "Crisps / Potato Chips", cal: 536, pro: 7, carb: 53, fat: 35, itemG: 25, note: "~small bag" },
+  { name: "Popcorn (air popped)", cal: 387, pro: 13, carb: 78, fat: 5, cupG: 8 },
+  { name: "Granola Bar", cal: 400, pro: 8, carb: 64, fat: 14, itemG: 47, note: "~1 bar" },
+  { name: "Protein Bar (average)", cal: 350, pro: 25, carb: 40, fat: 10, itemG: 60, note: "~1 bar" },
+  { name: "Doughnut (glazed)", cal: 452, pro: 4.9, carb: 51, fat: 25, itemG: 60, note: "~1 doughnut" },
+  // -- FAST FOOD --
+  { name: "Burger (beef, regular)", cal: 295, pro: 17, carb: 24, fat: 14, itemG: 170, note: "~1 burger" },
+  { name: "Cheeseburger", cal: 303, pro: 17, carb: 24, fat: 13, itemG: 180, note: "~1 cheeseburger" },
+  { name: "Chicken Burger", cal: 283, pro: 21, carb: 27, fat: 10, itemG: 170, note: "~1 burger" },
+  { name: "Pizza (cheese, 1 slice)", cal: 266, pro: 11, carb: 33, fat: 10, itemG: 107, note: "~1 slice" },
+  { name: "Pizza (pepperoni, 1 slice)", cal: 298, pro: 12, carb: 34, fat: 12, itemG: 107, note: "~1 slice" },
+  { name: "Fried Chicken (1 piece)", cal: 260, pro: 20, carb: 9, fat: 16, itemG: 100, note: "~1 piece" },
+  { name: "Chicken Nuggets (6 pieces)", cal: 270, pro: 15, carb: 17, fat: 16, itemG: 100, note: "~6 pieces" },
+  { name: "Shawarma / Wrap", cal: 250, pro: 16, carb: 22, fat: 11, itemG: 250, note: "~1 wrap" },
+  { name: "Hot Dog (with bun)", cal: 290, pro: 11, carb: 24, fat: 16, itemG: 130, note: "~1 hot dog" },
+  { name: "Noodles (instant, cooked)", cal: 138, pro: 3.5, carb: 26, fat: 2.5, cupG: 227 },
+  // -- BEVERAGES --
+  { name: "Black Coffee (no sugar)", cal: 2, pro: 0.3, carb: 0, fat: 0, cupG: 240, itemG: 240, note: "~1 cup" },
+  { name: "Coffee with milk", cal: 11, pro: 0.7, carb: 0.9, fat: 0.5, cupG: 240, itemG: 240, note: "~1 cup" },
+  { name: "Coffee with milk and sugar", cal: 30, pro: 0.7, carb: 5.5, fat: 0.5, cupG: 240, itemG: 240, note: "~1 cup" },
+  { name: "Cappuccino", cal: 74, pro: 3.8, carb: 6.7, fat: 3.2, cupG: 180, itemG: 180, note: "~1 cup" },
+  { name: "Latte (full cream milk)", cal: 79, pro: 4, carb: 8, fat: 3.5, cupG: 300, itemG: 300, note: "~1 cup" },
+  { name: "Tea (black, no sugar)", cal: 1, pro: 0, carb: 0.2, fat: 0, cupG: 240, itemG: 240, note: "~1 cup" },
+  { name: "Tea with milk and sugar", cal: 45, pro: 1, carb: 8, fat: 1, cupG: 240, itemG: 240, note: "~1 cup" },
+  { name: "Chai Tea / Masala Tea", cal: 67, pro: 2.8, carb: 9.5, fat: 2.2, cupG: 240, itemG: 240, note: "~1 cup" },
+  { name: "Green Tea", cal: 1, pro: 0, carb: 0.1, fat: 0, cupG: 240, itemG: 240, note: "~1 cup" },
+  { name: "Ginger Tea", cal: 5, pro: 0.1, carb: 1, fat: 0, cupG: 240, itemG: 240, note: "~1 cup" },
+  { name: "Mursik (fermented milk, Kalenjin)", cal: 68, pro: 3.3, carb: 5, fat: 3.8, cupG: 240 },
+  { name: "Mtindi / Mala (soured milk)", cal: 60, pro: 3.2, carb: 4.7, fat: 3.3, cupG: 244 },
+  { name: "Uji wa Mtama (sorghum porridge drink)", cal: 52, pro: 1.8, carb: 11, fat: 0.5, cupG: 244 },
+  { name: "Dawa (ginger lemon honey drink)", cal: 35, pro: 0.1, carb: 9, fat: 0, itemG: 240, note: "~1 glass" },
+  { name: "Orange Juice (fresh)", cal: 45, pro: 0.7, carb: 10, fat: 0.2, cupG: 248 },
+  { name: "Mango Juice", cal: 60, pro: 0.4, carb: 14, fat: 0.2, cupG: 250 },
+  { name: "Passion Fruit Juice", cal: 55, pro: 0.7, carb: 13, fat: 0.1, cupG: 240 },
+  { name: "Tamarind Juice", cal: 45, pro: 0.3, carb: 11, fat: 0.1, cupG: 240 },
+  { name: "Coca-Cola / Pepsi", cal: 42, pro: 0, carb: 11, fat: 0, itemG: 330, note: "~1 can" },
+  { name: "Diet Coke / Zero", cal: 0, pro: 0, carb: 0.1, fat: 0, itemG: 330, note: "~1 can" },
+  { name: "Energy Drink (Red Bull)", cal: 45, pro: 0, carb: 11, fat: 0, itemG: 250, note: "~1 can" },
+  { name: "Beer (regular, 1 can)", cal: 43, pro: 0.5, carb: 3.6, fat: 0, itemG: 330, note: "~1 can" },
+  { name: "Wine (red, 1 glass)", cal: 85, pro: 0.1, carb: 2.6, fat: 0, itemG: 150, note: "~1 glass" },
+  { name: "Wine (white, 1 glass)", cal: 82, pro: 0.1, carb: 2.6, fat: 0, itemG: 150, note: "~1 glass" },
+  { name: "Protein Shake (whey, water)", cal: 120, pro: 25, carb: 5, fat: 1.5, itemG: 400, note: "~1 shake" },
+  { name: "Water", cal: 0, pro: 0, carb: 0, fat: 0, cupG: 240 },
+  // -- BREAKFAST FOODS --
+  { name: "Cornflakes", cal: 357, pro: 7, carb: 84, fat: 0.8, cupG: 28 },
+  { name: "Muesli", cal: 368, pro: 10, carb: 66, fat: 7, cupG: 90 },
+  { name: "Granola", cal: 471, pro: 10, carb: 64, fat: 20, cupG: 122 },
+  { name: "Weetabix (2 biscuits)", cal: 136, pro: 5, carb: 27, fat: 0.9, itemG: 38, note: "~2 biscuits" },
+  { name: "Baked Beans (canned)", cal: 94, pro: 5, carb: 17, fat: 0.3, cupG: 254 },
+  // -- SUPPLEMENTS --
+  { name: "Whey Protein Powder", cal: 400, pro: 80, carb: 8, fat: 5 },
+  { name: "Casein Protein Powder", cal: 370, pro: 72, carb: 10, fat: 4 },
+  { name: "Pea Protein Powder", cal: 360, pro: 75, carb: 5, fat: 4 },
+];
+
+</script>
+<script>
+const html = htm.bind(React.createElement);
+const {useState,useCallback,useEffect} = React;
+
+const STORAGE_KEY = "wellness_hub_v4";
+const TODAY = new Date().toISOString().split("T")[0];
+
+const defaultState = {
+  date: TODAY, foods: [], water: 0, steps: 0, stepHistory: [],
+  habits: {water:false, devotion:false, sleep:0, bedtime:"", wakeTime:""},
+  goals: {calories:2000, water:2500, steps:10000, sleep:8, protein:150, monthlySteps:300000},
+  programs: [], workoutSessions: [], weightLog: [], goalWeight:null, heightCm:null,
+  cycle:{periodDates:[], ovulationDates:[], symptoms:{}, avgCycleLength:28, avgPeriodDuration:5}
+};
+
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return defaultState;
+    const s = JSON.parse(raw);
+    if(s.date !== TODAY) return {...defaultState,...s,date:TODAY,foods:[],water:0,steps:0,habits:{water:false,devotion:false,sleep:0,bedtime:"",wakeTime:""}};
+    return {...defaultState,...s};
+  }catch{return defaultState;}
+}
+
+async function callAI(prompt){
+  const r = await fetch("https://api.anthropic.com/v1/messages",{
+    method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,messages:[{role:"user",content:prompt}]})
+  });
+  const d = await r.json();
+  return d.content.map(b=>b.text||"").join("");
+}
+
+function smartToGrams(qty,unit,food){
+  if(unit==="g"||unit==="ml") return qty;
+  if(unit==="kg") return qty*1000;
+  if(unit==="l") return qty*1000;
+  if(unit==="oz") return qty*28.35;
+  if(unit==="lb") return qty*453.6;
+  if(unit==="tbsp") return qty*15;
+  if(unit==="tsp") return qty*5;
+  if(unit==="cup") return qty*(food&&food.cupG||240);
+  return qty*(food&&food.itemG||100);
+}
+
+function searchLocalDB(query){
+  const q = query.toLowerCase().trim();
+  const words = q.split(/\s+/).filter(w=>w.length>1);
+  const scored = FOOD_DB.map(food=>{
+    const name = food.name.toLowerCase();
+    let score=0;
+    words.forEach(w=>{if(name.startsWith(w))score+=3;else if(name.includes(w))score+=1;});
+    return {food,score};
+  }).filter(x=>x.score>0).sort((a,b)=>b.score-a.score);
+  return scored.slice(0,6).map(x=>x.food);
+}
+
+const UNIT_OPTIONS=[
+  {value:"g",label:"grams (g)"},{value:"kg",label:"kilograms (kg)"},
+  {value:"ml",label:"millilitres (ml)"},{value:"l",label:"litres (l)"},
+  {value:"cup",label:"cup (~240ml)"},{value:"tbsp",label:"tablespoon (~15ml)"},
+  {value:"tsp",label:"teaspoon (~5ml)"},{value:"oz",label:"ounces (oz)"},
+  {value:"lb",label:"pounds (lb)"},{value:"item",label:"item / piece"},
+  {value:"slice",label:"slice"},{value:"portion",label:"portion"}
+];
+
+const BODY_AREAS=[
+  {id:"chest",label:"Chest"},{id:"back",label:"Back"},{id:"shoulders",label:"Shoulders"},
+  {id:"arms",label:"Arms / Biceps / Triceps"},{id:"core",label:"Core / Abs"},
+  {id:"glutes",label:"Glutes / Booty"},{id:"legs",label:"Legs / Quads / Hamstrings"},
+  {id:"calves",label:"Calves"},{id:"fullbody",label:"Full Body"},
+  {id:"cardio",label:"Cardio / Endurance"},{id:"flexibility",label:"Flexibility / Mobility"}
+];
+
+const SYMPTOM_LIST=["Cramps","Bloating","Spotting","Heavy flow","Light flow",
+  "Breast tenderness","Headache","Fatigue","Mood swings","Nausea","Back pain",
+  "Acne","Food cravings","Increased libido","Clear/stretchy discharge",
+  "Pelvic pain","Constipation","Insomnia"];
+
+// UI Primitives
+function Card({children,style}){
+  return html`<div style=${{background:"var(--color-background-primary,#fff)",border:"0.5px solid rgba(0,0,0,0.1)",borderRadius:12,padding:"14px 18px",marginBottom:12,...style}}>${children}</div>`;
+}
+function CT({icon,children}){
+  return html`<p style=${{fontSize:15,fontWeight:500,display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
+    <i class=${"ti "+icon} aria-hidden="true"></i>${children}</p>`;
+}
+function Btn({children,onClick,primary,danger,small,style,disabled}){
+  const s={padding:small?"5px 10px":"8px 14px",borderRadius:8,
+    border:danger?"0.5px solid #F7C1C1":"0.5px solid rgba(0,0,0,0.2)",
+    background:primary?"var(--color-text-primary,#1a1a1a)":"var(--color-background-primary,#fff)",
+    color:primary?"var(--color-background-primary,#fff)":danger?"#A32D2D":"var(--color-text-primary,#1a1a1a)",
+    fontSize:small?12:14,cursor:disabled?"default":"pointer",opacity:disabled?0.5:1,
+    display:"inline-flex",alignItems:"center",gap:5,whiteSpace:"nowrap",flexShrink:0,...style};
+  return html`<button onClick=${onClick} disabled=${disabled} style=${s}>${children}</button>`;
+}
+function Inp({value,onChange,type="text",placeholder,style,onKeyDown,min,max,step}){
+  const s={padding:"8px 10px",borderRadius:8,border:"0.5px solid rgba(0,0,0,0.2)",
+    fontSize:14,background:"var(--color-background-primary,#fff)",
+    color:"var(--color-text-primary,#1a1a1a)",width:"100%",...style};
+  return html`<input value=${value} onChange=${onChange} type=${type} placeholder=${placeholder}
+    onKeyDown=${onKeyDown} min=${min} max=${max} step=${step} style=${s}/>`;
+}
+function Sel({value,onChange,children,style}){
+  const s={padding:"8px 10px",borderRadius:8,border:"0.5px solid rgba(0,0,0,0.2)",
+    fontSize:14,background:"var(--color-background-primary,#fff)",
+    color:"var(--color-text-primary,#1a1a1a)",...style};
+  return html`<select value=${value} onChange=${onChange} style=${s}>${children}</select>`;
+}
+function PBar({value,max,color="#1D9E75"}){
+  const pct=Math.min(100,max>0?Math.round(value/max*100):0);
+  return html`<div style=${{height:8,background:"#eee",borderRadius:4,overflow:"hidden",marginTop:4}}>
+    <div style=${{height:"100%",width:pct+"%",background:color,borderRadius:4,transition:"width 0.3s"}}></div>
+  </div>`;
+}
+function MCard({label,value,unit,color}){
+  return html`<div style=${{background:"#f8f8f5",borderRadius:8,padding:"12px 14px"}}>
+    <p style=${{fontSize:12,color:"#666",marginBottom:2}}>${label}</p>
+    <p style=${{fontSize:19,fontWeight:500,color:color||"var(--color-text-primary,#1a1a1a)"}}>${value}</p>
+    <p style=${{fontSize:12,color:"#666"}}>${unit}</p>
+  </div>`;
+}
+function Toggle({on,onClick}){
+  return html`<button onClick=${onClick} style=${{width:40,height:22,borderRadius:11,
+    background:on?"#1D9E75":"#ddd",border:"none",cursor:"pointer",position:"relative",
+    transition:"background 0.2s",flexShrink:0}}>
+    <span style=${{position:"absolute",top:3,left:3,width:16,height:16,borderRadius:"50%",
+      background:"#fff",transition:"transform 0.2s",transform:on?"translateX(18px)":"none",display:"block"}}></span>
+  </button>`;
+}
+function Tag({children,color="green"}){
+  const c={green:["#EAF3DE","#3B6D11"],amber:["#FAEEDA","#854F0B"],blue:["#E6F1FB","#185FA5"],
+    pink:["#FBEAF0","#993556"],purple:["#EEEDFE","#534AB7"],teal:["#E1F5EE","#0F6E56"],red:["#FCEBEB","#A32D2D"]};
+  const [bg,text]=(c[color]||c.green);
+  return html`<span style=${{background:bg,color:text,fontSize:11,fontWeight:500,padding:"2px 8px",borderRadius:10}}>${children}</span>`;
+}
+function AIBox({text,loading}){
+  if(!text&&!loading) return null;
+  return html`<div style=${{background:"#f8f8f5",borderRadius:8,padding:"10px 12px",marginTop:8,
+    fontSize:13,lineHeight:1.6,color:"#555",whiteSpace:"pre-wrap"}}>${loading?"Thinking...":text}</div>`;
+}
+function Chip({label,active,onClick}){
+  return html`<button onClick=${onClick} style=${{padding:"5px 12px",borderRadius:20,
+    border:"0.5px solid "+(active?"var(--color-text-primary,#1a1a1a)":"rgba(0,0,0,0.2)"),
+    background:active?"var(--color-text-primary,#1a1a1a)":"var(--color-background-primary,#fff)",
+    color:active?"var(--color-background-primary,#fff)":"#666",
+    fontSize:13,cursor:"pointer",whiteSpace:"nowrap"}}>${label}</button>`;
+}
+
+const TABS=[
+  {id:"nutrition",label:"Nutrition",icon:"ti-salad"},
+  {id:"workouts",label:"Workouts",icon:"ti-barbell"},
+  {id:"steps",label:"Steps",icon:"ti-shoe"},
+  {id:"habits",label:"Habits",icon:"ti-checklist"},
+  {id:"goals",label:"Goals",icon:"ti-target"},
+  {id:"weight",label:"Weight",icon:"ti-scale"},
+  {id:"cycle",label:"Cycle",icon:"ti-moon"}
+];
+
+// ── NUTRITION ──────────────────────────────────────────────────────────────────
+function NutritionTab({state,setState}){
+  const [query,setQuery]=useState("");
+  const [results,setResults]=useState([]);
+  const [searching,setSearching]=useState(false);
+  const [aiText,setAiText]=useState("");
+  const [aiLoading,setAiLoading]=useState(false);
+  const [aiFood,setAiFood]=useState(null);
+  const [servingQty,setServingQty]=useState({});
+  const [servingUnit,setServingUnit]=useState({});
+  const [manName,setManName]=useState("");
+  const [manQty,setManQty]=useState("");
+  const [manUnit,setManUnit]=useState("g");
+  const [manCals,setManCals]=useState("");
+  const [manProt,setManProt]=useState("");
+  const [manCarbs,setManCarbs]=useState("");
+  const [manFat,setManFat]=useState("");
+  const [manFibre,setManFibre]=useState("");
+  const [waterInput,setWaterInput]=useState("");
+
+  const totalCals=state.foods.reduce((s,f)=>s+(f.calories||0),0);
+  const totalProt=state.foods.reduce((s,f)=>s+(f.protein||0),0);
+  const totalCarbs=state.foods.reduce((s,f)=>s+(f.carbs||0),0);
+  const totalFat=state.foods.reduce((s,f)=>s+(f.fat||0),0);
+  const totalFibre=state.foods.reduce((s,f)=>s+(f.fibre||0),0);
+  const protCals=totalProt*4,carbCals=totalCarbs*4,fatCals=totalFat*9;
+  const totalMacroCals=protCals+carbCals+fatCals||1;
+  const protSplit=Math.round(protCals/totalMacroCals*100);
+  const carbSplit=Math.round(carbCals/totalMacroCals*100);
+  const fatSplit=Math.round(fatCals/totalMacroCals*100);
+
+  async function doSearch(){
+    if(!query.trim()) return;
+    setSearching(true);setResults([]);setAiText("");setAiFood(null);
+    const local=searchLocalDB(query);
+    if(local.length){
+      setResults(local.map(f=>({...f,fromDB:true})));
+      const u={},q={};
+      local.forEach(f=>{u[f.name]=f.itemG?"item":"g";q[f.name]=f.itemG?"1":"100";});
+      setServingUnit(u);setServingQty(q);
+    } else {
+      setAiLoading(true);
+      try{
+        const r=await callAI(`You are a nutrition database. Per 100g for "${query}": 1 sentence description. End with: CALORIES:[n] PROTEIN:[n] CARBS:[n] FAT:[n]`);
+        const parse=k=>{const m=r.match(new RegExp(k+":[\\d.]+","i"));return m?parseFloat(m[0].split(":")[1]):0;};
+        setAiText(r.replace(/CALORIES:[\d.]+/ig,"").replace(/PROTEIN:[\d.]+/ig,"").replace(/CARBS:[\d.]+/ig,"").replace(/FAT:[\d.]+/ig,"").trim());
+        setAiFood({name:query,calories:Math.round(parse("CALORIES")),protein:Math.round(parse("PROTEIN")*10)/10,carbs:Math.round(parse("CARBS")*10)/10,fat:Math.round(parse("FAT")*10)/10,qty:"100g"});
+      }catch{setAiText("Not found. Try manual entry below.");}
+      setAiLoading(false);
+    }
+    setSearching(false);
+  }
+
+  function addFromDB(p){
+    const key=p.fromDB?p.name:p.product_name;
+    const rawQty=parseFloat(servingQty[key]||"100")||100;
+    const unit=servingUnit[key]||"g";
+    const grams=smartToGrams(rawQty,unit,p.fromDB?p:null);
+    const factor=grams/100;
+    const food=p.fromDB?{
+      name:p.name,calories:Math.round(p.cal*factor),protein:Math.round(p.pro*factor*10)/10,
+      carbs:Math.round(p.carb*factor*10)/10,fat:Math.round(p.fat*factor*10)/10,
+      serving:(unit==="item"&&p.note)?p.note:`${rawQty} ${unit}`
+    }:{
+      name:p.product_name+(p.brands?` (${p.brands})`:""),
+      calories:Math.round((p.nutriments["energy-kcal_100g"]||p.nutriments["energy-kcal"]||0)*factor),
+      protein:Math.round((p.nutriments.proteins_100g||0)*factor*10)/10,
+      carbs:Math.round((p.nutriments.carbohydrates_100g||0)*factor*10)/10,
+      fat:Math.round((p.nutriments.fat_100g||0)*factor*10)/10,serving:`${rawQty} ${unit}`
+    };
+    setState(s=>({...s,foods:[...s.foods,food]}));
+    setResults([]);setQuery("");
+  }
+
+  function addManual(){
+    if(!manName.trim()) return;
+    setState(s=>({...s,foods:[...s.foods,{name:manName,calories:parseInt(manCals)||0,
+      protein:parseFloat(manProt)||0,carbs:parseFloat(manCarbs)||0,fat:parseFloat(manFat)||0,
+      fibre:parseFloat(manFibre)||0,serving:`${manQty} ${manUnit}`}]}));
+    setManName("");setManQty("");setManCals("");setManProt("");setManCarbs("");setManFat("");setManFibre("");
+  }
+
+  function addWater(ml){setState(s=>({...s,water:s.water+ml}));}
+  function addWaterCustom(){const v=parseInt(waterInput)||0;if(v>0){addWater(v);setWaterInput("");}}
+
+  return html`<div>
+    <${Card}>
+      <p style=${{fontSize:15,fontWeight:500,marginBottom:6}}>Calories</p>
+      <div style=${{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:4}}>
+        <span style=${{fontSize:24,fontWeight:600,color:"#D85A30"}}>${totalCals}</span>
+        <span style=${{fontSize:13,color:"#666"}}>/ ${state.goals.calories} kcal</span>
+      </div>
+      <${PBar} value=${totalCals} max=${state.goals.calories} color="#D85A30"/>
+      <p style=${{fontSize:11,color:"#666",marginTop:3}}>${state.goals.calories-totalCals>0?`${state.goals.calories-totalCals} kcal remaining`:`${totalCals-state.goals.calories} kcal over goal`}</p>
+    <//>
+    <${Card}>
+      <${CT} icon="ti-chart-pie">Macros Breakdown<//>
+      ${totalMacroCals>1&&html`<div style=${{display:"flex",height:10,borderRadius:5,overflow:"hidden",marginBottom:10,gap:2}}>
+        <div style=${{width:protSplit+"%",background:"#534AB7",borderRadius:"5px 0 0 5px"}}></div>
+        <div style=${{width:carbSplit+"%",background:"#BA7517"}}></div>
+        <div style=${{width:fatSplit+"%",background:"#1D9E75",borderRadius:"0 5px 5px 0"}}></div>
+      </div>`}
+      ${[{label:"Protein",value:totalProt,goal:state.goals.protein||150,unit:"g",color:"#534AB7",split:protSplit},
+         {label:"Carbs",value:totalCarbs,goal:null,unit:"g",color:"#BA7517",split:carbSplit},
+         {label:"Fat",value:totalFat,goal:null,unit:"g",color:"#1D9E75",split:fatSplit},
+         {label:"Fibre",value:totalFibre,goal:25,unit:"g",color:"#0F6E56",split:null}
+      ].map(m=>html`<div key=${m.label} style=${{marginBottom:10}}>
+        <div style=${{display:"flex",justifyContent:"space-between",fontSize:13,marginBottom:2}}>
+          <span style=${{display:"flex",alignItems:"center",gap:6}}>
+            <span style=${{width:10,height:10,borderRadius:"50%",background:m.color,display:"inline-block"}}></span>
+            ${m.label}${m.split!==null?html` <span style=${{fontSize:11,color:"#666"}}>(${m.split}%)</span>`:""}
+          </span>
+          <span style=${{color:"#666"}}><strong style=${{color:m.color}}>${m.value.toFixed(1)}${m.unit}</strong>${m.goal?` / ${m.goal}${m.unit} goal`:""}</span>
+        </div>
+        ${m.goal?html`<${PBar} value=${m.value} max=${m.goal} color=${m.color}/>`
+          :html`<div style=${{height:6,background:m.color,borderRadius:3,opacity:0.25,marginTop:4}}></div>`}
+      </div>`)}
+    <//>
+    <${Card}>
+      <${CT} icon="ti-search">Search Food Database<//>
+      <p style=${{fontSize:12,color:"#666",marginBottom:8}}>Local database of 400+ foods including Kenyan & African staples. AI fallback if not found.</p>
+      <div style=${{display:"flex",gap:8,marginBottom:8}}>
+        <${Inp} value=${query} onChange=${e=>setQuery(e.target.value)} placeholder="e.g. ugali, chapati, chicken breast, avocado..." onKeyDown=${e=>e.key==="Enter"&&doSearch()}/>
+        <${Btn} onClick=${doSearch} primary=${true} disabled=${searching}>${searching?"...":"Search"}<//>
+      </div>
+      ${results.map((p,i)=>{
+        const isLocal=p.fromDB;
+        const key=isLocal?p.name:p.product_name;
+        const kcal=isLocal?p.cal:Math.round(p.nutriments?.["energy-kcal_100g"]||p.nutriments?.["energy-kcal"]||0);
+        const qty=servingQty[key]!==undefined?servingQty[key]:(isLocal&&p.itemG?"1":"100");
+        const unit=servingUnit[key]!==undefined?servingUnit[key]:(isLocal&&p.itemG?"item":"g");
+        const estCals=Math.round(kcal*smartToGrams(parseFloat(qty)||100,unit,isLocal?p:null)/100);
+        return html`<div key=${i} style=${{padding:"10px 0",borderBottom:"0.5px solid rgba(0,0,0,0.08)"}}>
+          <div style=${{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+            <p style=${{fontSize:14,fontWeight:500}}>${key}</p>
+            ${isLocal&&html`<span style=${{fontSize:11,background:"#EAF3DE",color:"#3B6D11",padding:"1px 6px",borderRadius:8}}>Verified</span>`}
+          </div>
+          <p style=${{fontSize:12,color:"#666",marginBottom:6}}>${kcal} kcal \u00b7 ${isLocal?p.pro:(p.nutriments?.proteins_100g||0).toFixed(1)}g protein per 100g</p>
+          ${isLocal&&p.note&&html`<p style=${{fontSize:11,color:"#534AB7",marginBottom:6}}>${p.note}</p>`}
+          <div style=${{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
+            <${Inp} type="number" value=${qty} onChange=${e=>setServingQty(q=>({...q,[key]:e.target.value}))} placeholder="Qty" style=${{width:60}}/>
+            <${Sel} value=${unit} onChange=${e=>setServingUnit(u=>({...u,[key]:e.target.value}))} style=${{flex:1,minWidth:120}}>
+              ${UNIT_OPTIONS.map(o=>html`<option key=${o.value} value=${o.value}>${o.label}</option>`)}
+            <//>
+            <span style=${{fontSize:13,color:"#D85A30",fontWeight:600}}>${estCals} kcal</span>
+            <${Btn} onClick=${()=>addFromDB(p)} primary=${true} small=${true}>+ Add<//>
+          </div>
+        </div>`;
+      })}
+      ${(aiText||aiLoading)&&html`<div>
+        <p style=${{fontSize:12,color:"#666",marginTop:8}}>AI estimate (per 100g):</p>
+        <${AIBox} text=${aiText} loading=${aiLoading}/>
+        ${aiFood&&!aiLoading&&html`<${Btn} onClick=${()=>{setState(s=>({...s,foods:[...s.foods,aiFood]}));setQuery("");setAiText("");setAiFood(null);}} primary=${true} style=${{marginTop:8}}>+ Add AI estimate (${aiFood.calories} kcal)<//>`}
+      </div>`}
+    <//>
+    <${Card}>
+      <${CT} icon="ti-pencil">Manual Entry<//>
+      <div style=${{display:"flex",flexWrap:"wrap",gap:8,marginBottom:8}}>
+        <${Inp} value=${manName} onChange=${e=>setManName(e.target.value)} placeholder="Food name" style=${{flex:"2 1 140px"}}/>
+        <${Inp} value=${manQty} onChange=${e=>setManQty(e.target.value)} type="number" placeholder="Qty" style=${{flex:"0 0 60px"}}/>
+        <${Sel} value=${manUnit} onChange=${e=>setManUnit(e.target.value)} style=${{flex:"1 1 110px"}}>
+          ${UNIT_OPTIONS.map(o=>html`<option key=${o.value} value=${o.value}>${o.label}</option>`)}
+        <//>
+      </div>
+      <div style=${{display:"flex",flexWrap:"wrap",gap:8,marginBottom:8}}>
+        <${Inp} value=${manCals} onChange=${e=>setManCals(e.target.value)} type="number" placeholder="kcal" style=${{flex:"1 1 60px"}}/>
+        <${Inp} value=${manProt} onChange=${e=>setManProt(e.target.value)} type="number" placeholder="protein g" style=${{flex:"1 1 60px"}}/>
+        <${Inp} value=${manCarbs} onChange=${e=>setManCarbs(e.target.value)} type="number" placeholder="carbs g" style=${{flex:"1 1 60px"}}/>
+        <${Inp} value=${manFat} onChange=${e=>setManFat(e.target.value)} type="number" placeholder="fat g" style=${{flex:"1 1 60px"}}/>
+        <${Inp} value=${manFibre} onChange=${e=>setManFibre(e.target.value)} type="number" placeholder="fibre g" style=${{flex:"1 1 60px"}}/>
+        <${Btn} onClick=${addManual} primary=${true}>+ Add<//>
+      </div>
+    <//>
+    <${Card}>
+      <${CT} icon="ti-droplet">Water Intake<//>
+      <div style=${{display:"flex",gap:8,marginBottom:10,flexWrap:"wrap"}}>
+        <${Inp} value=${waterInput} onChange=${e=>setWaterInput(e.target.value)} type="number" placeholder="ml" style=${{flex:"1 1 80px"}}/>
+        <${Btn} onClick=${()=>addWater(250)}>+250ml<//>
+        <${Btn} onClick=${()=>addWater(500)}>+500ml<//>
+        <${Btn} onClick=${()=>addWater(750)}>+750ml<//>
+        <${Btn} onClick=${addWaterCustom} primary=${true}>+<//> 
+      </div>
+      <${PBar} value=${state.water} max=${state.goals.water} color="#1D9E75"/>
+      <p style=${{fontSize:12,color:"#666",marginTop:4}}>${state.water.toLocaleString()} / ${state.goals.water.toLocaleString()} ml</p>
+    <//>
+    <${Card}>
+      <${CT} icon="ti-list">Today's Food Log<//>
+      ${!state.foods.length?html`<p style=${{fontSize:13,color:"#666"}}>Nothing logged yet.</p>`:
+        state.foods.map((f,i)=>html`<div key=${i} style=${{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 0",borderBottom:i<state.foods.length-1?"0.5px solid rgba(0,0,0,0.08)":"none"}}>
+          <div>
+            <p style=${{fontSize:14,fontWeight:500}}>${f.name}</p>
+            <p style=${{fontSize:12,color:"#666"}}>${f.serving?f.serving+' \u00b7 ':''} ${f.calories} kcal \u00b7 ${f.protein}g P \u00b7 ${f.carbs}g C \u00b7 ${f.fat}g F${f.fibre?` \u00b7 ${f.fibre}g fibre`:''}</p>
+          </div>
+          <${Btn} onClick=${()=>setState(s=>({...s,foods:s.foods.filter((_,j)=>j!==i)}))} danger=${true} small=${true}>x<//>
+        </div>`)}
+    <//>
+  </div>`;
+}
+
+// ── WORKOUTS ───────────────────────────────────────────────────────────────────
+function WorkoutsTab({state,setState}){
+  const [view,setView]=useState("programs");
+  const [exSearch,setExSearch]=useState("");const [exResult,setExResult]=useState("");const [exLoading,setExLoading]=useState(false);
+  const [progName,setProgName]=useState("");const [activeProg,setActiveProg]=useState(null);
+  const [exName,setExName]=useState("");const [exSets,setExSets]=useState("");
+  const [sessionProg,setSessionProg]=useState(null);const [sessionSets,setSessionSets]=useState({});const [sessionNotes,setSessionNotes]=useState("");
+  const [histFilter,setHistFilter]=useState(null);
+  const [selAreas,setSelAreas]=useState([]);const [fitLevel,setFitLevel]=useState("intermediate");const [equipment,setEquipment]=useState("gym");
+  const [suggestResult,setSuggestResult]=useState("");const [suggestLoading,setSuggestLoading]=useState(false);
+
+  async function searchEx(){
+    if(!exSearch.trim())return;setExLoading(true);setExResult("");
+    try{const r=await callAI(`Fitness coach. Describe "${exSearch}": muscles worked, 2-3 form tips, common mistake. 4-5 sentences.`);setExResult(r);}
+    catch{setExResult("Could not fetch.");}setExLoading(false);
+  }
+  async function getSuggestions(){
+    if(!selAreas.length)return;setSuggestLoading(true);setSuggestResult("");
+    const areas=selAreas.map(id=>BODY_AREAS.find(a=>a.id===id)?.label).join(", ");
+    try{const r=await callAI(`Personal trainer. Workout targeting: ${areas}. Level: ${fitLevel}. Equipment: ${equipment==="gym"?"full gym":equipment==="home"?"bodyweight":"bands/dumbbells"}. Give 6-8 exercises with sets, reps and brief notes.`);setSuggestResult(r);}
+    catch{setSuggestResult("Could not generate.");}setSuggestLoading(false);
+  }
+  function createProg(){if(!progName.trim())return;const p={id:Date.now().toString(),name:progName,exercises:[]};setState(s=>({...s,programs:[...s.programs,p]}));setProgName("");setActiveProg(p.id);}
+  function addEx(progId){if(!exName.trim())return;setState(s=>({...s,programs:s.programs.map(p=>p.id===progId?{...p,exercises:[...p.exercises,{name:exName,sets:exSets,ytQuery:encodeURIComponent(exName+" proper form tutorial")}]}:p)}));setExName("");setExSets("");}
+  function startSession(prog){const init={};prog.exercises.forEach((_,i)=>{init[i]=[{reps:"",weight:""}];});setSessionProg(prog);setSessionSets(init);setSessionNotes("");setView("session");}
+  function saveSession(){if(!sessionProg)return;const exercises=sessionProg.exercises.map((e,i)=>({name:e.name,sets:(sessionSets[i]||[]).filter(s=>s.reps||s.weight)}));setState(s=>({...s,workoutSessions:[...(s.workoutSessions||[]),{id:Date.now().toString(),date:TODAY,programName:sessionProg.name,programId:sessionProg.id,exercises,notes:sessionNotes}]}));setView("programs");setSessionProg(null);}
+  function getPB(name){const all=[];(state.workoutSessions||[]).forEach(sess=>sess.exercises.forEach(ex=>{if(ex.name===name)ex.sets.forEach(s=>{if(s.weight)all.push({weight:parseFloat(s.weight),reps:parseInt(s.reps)||0,date:sess.date});});}));return all.length?all.reduce((b,s)=>s.weight>(b?.weight||0)?s:b,null):null;}
+
+  const sessions=state.workoutSessions||[];
+
+  if(view==="suggest") return html`<div>
+    <div style=${{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
+      <${Btn} onClick=${()=>setView("programs")}>Back<//>
+      <p style=${{fontWeight:500,fontSize:15}}>Workout Suggestions</p>
+    </div>
+    <${Card}>
+      <${CT} icon="ti-target">Target Body Areas<//>
+      <div style=${{display:"flex",flexWrap:"wrap",gap:8,marginBottom:12}}>
+        ${BODY_AREAS.map(a=>html`<${Chip} key=${a.id} label=${a.label} active=${selAreas.includes(a.id)} onClick=${()=>setSelAreas(prev=>prev.includes(a.id)?prev.filter(x=>x!==a.id):[...prev,a.id])}/>`)}
+      </div>
+      <div style=${{display:"flex",flexWrap:"wrap",gap:10,marginBottom:12}}>
+        <div style=${{flex:"1 1 130px"}}>
+          <p style=${{fontSize:12,color:"#666",marginBottom:4}}>Fitness level</p>
+          <${Sel} value=${fitLevel} onChange=${e=>setFitLevel(e.target.value)} style=${{width:"100%"}}>
+            <option value="beginner">Beginner</option>
+            <option value="intermediate">Intermediate</option>
+            <option value="advanced">Advanced</option>
+          <//>
+        </div>
+        <div style=${{flex:"1 1 130px"}}>
+          <p style=${{fontSize:12,color:"#666",marginBottom:4}}>Equipment</p>
+          <${Sel} value=${equipment} onChange=${e=>setEquipment(e.target.value)} style=${{width:"100%"}}>
+            <option value="gym">Full gym</option>
+            <option value="home">Home / bodyweight</option>
+            <option value="minimal">Bands / dumbbells</option>
+          <//>
+        </div>
+      </div>
+      <${Btn} onClick=${getSuggestions} primary=${true} disabled=${!selAreas.length||suggestLoading}>${suggestLoading?"Generating...":"Suggest workout"}<//>
+      <${AIBox} text=${suggestResult} loading=${suggestLoading}/>
+    <//>
+  </div>`;
+
+  if(view==="history") return html`<div>
+    <div style=${{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
+      <${Btn} onClick=${()=>setView("programs")}>Back<//>
+      <p style=${{fontWeight:500,fontSize:15}}>Session History</p>
+    </div>
+    <div style=${{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12}}>
+      <${Chip} label="All" active=${!histFilter} onClick=${()=>setHistFilter(null)}/>
+      ${state.programs.map(p=>html`<${Chip} key=${p.id} label=${p.name} active=${histFilter===p.id} onClick=${()=>setHistFilter(p.id)}/>`)}
+    </div>
+    ${!(histFilter?sessions.filter(s=>s.programId===histFilter):sessions).length?
+      html`<p style=${{fontSize:13,color:"#666"}}>No sessions yet.</p>`:
+      [...(histFilter?sessions.filter(s=>s.programId===histFilter):sessions)].reverse().map(sess=>html`<${Card} key=${sess.id}>
+        <div style=${{display:"flex",justifyContent:"space-between",marginBottom:8}}>
+          <div><p style=${{fontSize:15,fontWeight:500}}>${sess.programName}</p><p style=${{fontSize:12,color:"#666"}}>${sess.date}</p></div>
+          <${Tag} color="purple">${sess.exercises.length} exercises<//>
+        </div>
+        ${sess.exercises.map((ex,i)=>html`<div key=${i} style=${{marginBottom:8}}>
+          <p style=${{fontSize:13,fontWeight:500}}>${ex.name}</p>
+          <div style=${{display:"flex",gap:6,flexWrap:"wrap",marginTop:4}}>
+            ${ex.sets.map((s,j)=>html`<span key=${j} style=${{fontSize:12,background:"#f0f0ec",borderRadius:6,padding:"2px 8px"}}>Set ${j+1}: ${s.reps} reps${s.weight?" @ "+s.weight+"kg":""}</span>`)}
+          </div>
+        </div>`)}
+        ${sess.notes&&html`<p style=${{fontSize:12,color:"#666",fontStyle:"italic",marginTop:6}}>${sess.notes}</p>`}
+      <//>`)}
+  </div>`;
+
+  if(view==="session"&&sessionProg) return html`<div>
+    <div style=${{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
+      <${Btn} onClick=${()=>setView("programs")}>Back<//>
+      <p style=${{fontWeight:500,fontSize:15}}>Logging: ${sessionProg.name}</p>
+    </div>
+    ${sessionProg.exercises.map((ex,i)=>{
+      const pb=getPB(ex.name);
+      return html`<${Card} key=${i}>
+        <div style=${{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
+          <div>
+            <p style=${{fontSize:15,fontWeight:500}}>${ex.name}</p>
+            ${pb&&html`<p style=${{fontSize:12,color:"#534AB7"}}>PB: ${pb.weight}kg x ${pb.reps} reps (${pb.date})</p>`}
+          </div>
+          <a href=${"https://www.youtube.com/results?search_query="+ex.ytQuery} target="_blank" style=${{fontSize:12,color:"#185FA5",textDecoration:"none"}}>Watch</a>
+        </div>
+        <div style=${{display:"grid",gridTemplateColumns:"1fr 1fr 28px",gap:6,marginBottom:4}}>
+          <p style=${{fontSize:11,color:"#666"}}>Reps</p><p style=${{fontSize:11,color:"#666"}}>Weight (kg)</p><span></span>
+        </div>
+        ${(sessionSets[i]||[]).map((set,j)=>html`<div key=${j} style=${{display:"grid",gridTemplateColumns:"1fr 1fr 28px",gap:6,marginBottom:6,alignItems:"center"}}>
+          <${Inp} type="number" value=${set.reps} onChange=${e=>setSessionSets(s=>({...s,[i]:s[i].map((x,k)=>k===j?{...x,reps:e.target.value}:x)}))} placeholder="10"/>
+          <${Inp} type="number" value=${set.weight} onChange=${e=>setSessionSets(s=>({...s,[i]:s[i].map((x,k)=>k===j?{...x,weight:e.target.value}:x)}))} placeholder="60"/>
+          <button onClick=${()=>setSessionSets(s=>({...s,[i]:s[i].filter((_,k)=>k!==j)}))} style=${{background:"none",border:"none",cursor:"pointer",color:"#A32D2D",fontSize:16}}>x</button>
+        </div>`)}
+        <${Btn} onClick=${()=>setSessionSets(s=>({...s,[i]:[...(s[i]||[]),{reps:"",weight:""}]}))} small=${true}>+ Add set<//>
+      <//>`;
+    })}
+    <${Card}>
+      <${CT} icon="ti-notes">Session notes<//>
+      <textarea value=${sessionNotes} onChange=${e=>setSessionNotes(e.target.value)} placeholder="How did it feel?" rows=${3} style=${{width:"100%",padding:"8px 10px",borderRadius:8,border:"0.5px solid rgba(0,0,0,0.2)",fontSize:14,resize:"vertical",boxSizing:"border-box"}}></textarea>
+    <//>
+    <${Btn} onClick=${saveSession} primary=${true} style=${{width:"100%",justifyContent:"center"}}>Save session<//>
+  </div>`;
+
+  return html`<div>
+    <div style=${{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap"}}>
+      <${Btn} onClick=${()=>setView("suggest")} style=${{flex:1,justifyContent:"center"}}>Suggest a workout<//>
+      <${Btn} onClick=${()=>setView("history")} style=${{flex:1,justifyContent:"center"}}>History (${sessions.length})<//>
+    </div>
+    <${Card}>
+      <${CT} icon="ti-search">Exercise Info<//>
+      <div style=${{display:"flex",gap:8,marginBottom:8}}>
+        <${Inp} value=${exSearch} onChange=${e=>setExSearch(e.target.value)} onKeyDown=${e=>e.key==="Enter"&&searchEx()} placeholder="e.g. hip thrust, pull-up..."/>
+        <${Btn} onClick=${searchEx} primary=${true} disabled=${exLoading}>${exLoading?"...":"Search"}<//>
+      </div>
+      <${AIBox} text=${exResult} loading=${exLoading}/>
+      ${exResult&&!exLoading&&html`<a href=${"https://www.youtube.com/results?search_query="+encodeURIComponent(exSearch+" proper form tutorial")} target="_blank" style=${{display:"inline-flex",alignItems:"center",gap:6,marginTop:8,color:"#185FA5",fontSize:13,textDecoration:"none"}}>Watch on YouTube</a>`}
+    <//>
+    <${Card}>
+      <${CT} icon="ti-layout-list">Workout Programs<//>
+      <div style=${{display:"flex",gap:8,marginBottom:12}}>
+        <${Inp} value=${progName} onChange=${e=>setProgName(e.target.value)} onKeyDown=${e=>e.key==="Enter"&&createProg()} placeholder="New program name..."/>
+        <${Btn} onClick=${createProg} primary=${true}>Create<//>
+      </div>
+      ${!state.programs.length?html`<p style=${{fontSize:13,color:"#666"}}>No programs yet.</p>`:
+        state.programs.map(p=>html`<div key=${p.id}>
+          <div style=${{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 0",borderBottom:"0.5px solid rgba(0,0,0,0.08)"}}>
+            <div><p style=${{fontSize:14,fontWeight:500}}>${p.name}</p><p style=${{fontSize:12,color:"#666"}}>${p.exercises.length} exercise(s)</p></div>
+            <div style=${{display:"flex",gap:6}}>
+              <${Btn} onClick=${()=>startSession(p)} small=${true} style=${{background:"#EAF3DE",color:"#3B6D11",border:"0.5px solid #C0DD97"}}>Start<//>
+              <${Btn} onClick=${()=>setActiveProg(activeProg===p.id?null:p.id)} small=${true}>Edit<//>
+              <${Btn} onClick=${()=>{setState(s=>({...s,programs:s.programs.filter(x=>x.id!==p.id)}));if(activeProg===p.id)setActiveProg(null);}} danger=${true} small=${true}>x<//>
+            </div>
+          </div>
+          ${activeProg===p.id&&html`<div style=${{padding:"10px 0 4px"}}>
+            <div style=${{display:"flex",flexWrap:"wrap",gap:8,marginBottom:10}}>
+              <${Inp} value=${exName} onChange=${e=>setExName(e.target.value)} placeholder="Exercise name" style=${{flex:"2 1 140px"}}/>
+              <${Inp} value=${exSets} onChange=${e=>setExSets(e.target.value)} placeholder="e.g. 3x10" style=${{flex:"1 1 90px"}}/>
+              <${Btn} onClick=${()=>addEx(p.id)} primary=${true} small=${true}>+ Add<//>
+            </div>
+            ${p.exercises.map((e,i)=>html`<div key=${i} style=${{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"6px 0",borderBottom:"0.5px solid rgba(0,0,0,0.06)"}}>
+              <div><p style=${{fontSize:13,fontWeight:500}}>${e.name}</p><p style=${{fontSize:12,color:"#666"}}>${e.sets||"No template"}</p></div>
+              <div style=${{display:"flex",gap:8,alignItems:"center"}}>
+                <a href=${"https://www.youtube.com/results?search_query="+e.ytQuery} target="_blank" style=${{fontSize:12,color:"#185FA5",textDecoration:"none"}}>Watch</a>
+                <${Btn} onClick=${()=>setState(s=>({...s,programs:s.programs.map(x=>x.id===p.id?{...x,exercises:x.exercises.filter((_,j)=>j!==i)}:x)}))} danger=${true} small=${true}>x<//>
+              </div>
+            </div>`)}
+          </div>`}
+        </div>`)}
+    <//>
+  </div>`;
+}
+
+// ── STEPS ──────────────────────────────────────────────────────────────────────
+function StepsTab({state,setState}){
+  const [stepsInput,setStepsInput]=useState("");
+  const [goalInput,setGoalInput]=useState("");
+  const [monthlyGoalInput,setMonthlyGoalInput]=useState("");
+  const [histView,setHistView]=useState("monthly");
+  const stepHistory=state.stepHistory||[];
+  const monthlyStepGoal=state.goals.monthlySteps||(state.goals.steps*30);
+
+  function logSteps(){const v=parseInt(stepsInput)||0;if(!v)return;const newH=stepHistory.filter(h=>h.date!==TODAY);newH.push({date:TODAY,steps:v});setState(s=>({...s,steps:v,stepHistory:newH.slice(-365)}));setStepsInput("");}
+
+  function getMonthlyData(){
+    const bm={};
+    stepHistory.forEach(h=>{const m=h.date.slice(0,7);if(!bm[m])bm[m]={total:0,days:0};bm[m].total+=h.steps;bm[m].days+=1;});
+    return Object.entries(bm).sort((a,b)=>b[0]>a[0]?1:-1).slice(0,12);
+  }
+  function monthLabel(ym){const[y,m]=ym.split("-");return new Date(parseInt(y),parseInt(m)-1,1).toLocaleDateString("en-GB",{month:"short",year:"numeric"});}
+
+  const monthlyData=getMonthlyData();
+  const curMonth=TODAY.slice(0,7);
+  const curEntry=monthlyData.find(([m])=>m===curMonth);
+  const curTotal=curEntry?curEntry[1].total:state.steps;
+
+  return html`<div>
+    <div style=${{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(120px,1fr))",gap:8,marginBottom:12}}>
+      <${MCard} label="Today" value=${state.steps.toLocaleString()} unit="steps" color="#534AB7"/>
+      <${MCard} label="Daily goal" value=${state.goals.steps.toLocaleString()} unit="steps"/>
+      <${MCard} label="This month" value=${curTotal.toLocaleString()} unit=${"/ "+monthlyStepGoal.toLocaleString()} color="#1D9E75"/>
+      <${MCard} label="Burned today" value=${Math.round(state.steps*0.04)} unit="kcal est." color="#D85A30"/>
+    </div>
+    <${Card}>
+      <${CT} icon="ti-shoe">Log Steps<//>
+      <div style=${{display:"flex",gap:8,marginBottom:10}}>
+        <${Inp} value=${stepsInput} onChange=${e=>setStepsInput(e.target.value)} type="number" placeholder="Number of steps"/>
+        <${Btn} onClick=${logSteps} primary=${true}>Log<//>
+      </div>
+      <${PBar} value=${state.steps} max=${state.goals.steps} color="#534AB7"/>
+      <p style=${{fontSize:12,color:"#666",marginTop:4}}>${state.steps.toLocaleString()} / ${state.goals.steps.toLocaleString()} today</p>
+      <div style=${{marginTop:10}}>
+        <${PBar} value=${curTotal} max=${monthlyStepGoal} color="#1D9E75"/>
+        <p style=${{fontSize:12,color:"#666",marginTop:4}}>${curTotal.toLocaleString()} / ${monthlyStepGoal.toLocaleString()} this month</p>
+      </div>
+    <//>
+    <${Card}>
+      <${CT} icon="ti-settings">Step Goals<//>
+      <div style=${{display:"flex",flexWrap:"wrap",gap:10}}>
+        <div style=${{flex:"1 1 130px"}}>
+          <p style=${{fontSize:12,color:"#666",marginBottom:4}}>Daily goal</p>
+          <div style=${{display:"flex",gap:8}}>
+            <${Inp} value=${goalInput} onChange=${e=>setGoalInput(e.target.value)} type="number" placeholder=${state.goals.steps.toLocaleString()}/>
+            <${Btn} onClick=${()=>{setState(s=>({...s,goals:{...s.goals,steps:parseInt(goalInput)||s.goals.steps}}));setGoalInput("");}}>Save<//>
+          </div>
+        </div>
+        <div style=${{flex:"1 1 130px"}}>
+          <p style=${{fontSize:12,color:"#666",marginBottom:4}}>Monthly goal</p>
+          <div style=${{display:"flex",gap:8}}>
+            <${Inp} value=${monthlyGoalInput} onChange=${e=>setMonthlyGoalInput(e.target.value)} type="number" placeholder=${monthlyStepGoal.toLocaleString()}/>
+            <${Btn} onClick=${()=>{setState(s=>({...s,goals:{...s.goals,monthlySteps:parseInt(monthlyGoalInput)||monthlyStepGoal}}));setMonthlyGoalInput("");}}>Save<//>
+          </div>
+        </div>
+      </div>
+    <//>
+    <${Card}>
+      <${CT} icon="ti-chart-line">Step History<//>
+      <div style=${{display:"flex",gap:6,marginBottom:12}}>
+        <${Chip} label="Monthly" active=${histView==="monthly"} onClick=${()=>setHistView("monthly")}/>
+        <${Chip} label="Daily (last 30)" active=${histView==="daily"} onClick=${()=>setHistView("daily")}/>
+      </div>
+      ${histView==="monthly"&&(!monthlyData.length?html`<p style=${{fontSize:13,color:"#666"}}>No history yet.</p>`:
+        monthlyData.map(([month,data],i)=>html`<div key=${i} style=${{marginBottom:12}}>
+          <div style=${{display:"flex",justifyContent:"space-between",fontSize:12,color:"#666",marginBottom:2}}>
+            <span style=${{fontWeight:500}}>${monthLabel(month)}</span>
+            <span>${data.total.toLocaleString()} steps - ${data.days} days - avg ${Math.round(data.total/data.days).toLocaleString()}/day</span>
+          </div>
+          <${PBar} value=${data.total} max=${monthlyStepGoal} color="#534AB7"/>
+          <p style=${{fontSize:11,color:"#666",marginTop:2}}>${Math.round(data.total/monthlyStepGoal*100)}% of monthly goal</p>
+        </div>`))}
+      ${histView==="daily"&&(!stepHistory.length?html`<p style=${{fontSize:13,color:"#666"}}>No history yet.</p>`:
+        [...stepHistory].reverse().slice(0,30).map((h,i)=>html`<div key=${i} style=${{marginBottom:10}}>
+          <div style=${{display:"flex",justifyContent:"space-between",fontSize:12,color:"#666"}}><span>${h.date}</span><span>${h.steps.toLocaleString()} steps</span></div>
+          <${PBar} value=${h.steps} max=${state.goals.steps} color="#534AB7"/>
+        </div>`))}
+    <//>
+  </div>`;
+}
+
+// ── HABITS ─────────────────────────────────────────────────────────────────────
+function HabitsTab({state,setState}){
+  const [bedtime,setBedtime]=useState(state.habits.bedtime||"");
+  const [wakeTime,setWakeTime]=useState(state.habits.wakeTime||"");
+  const [aiText,setAiText]=useState("");const [aiLoading,setAiLoading]=useState(false);
+
+  function calcSleepHrs(bed,wake){
+    if(!bed||!wake)return null;
+    const[bh,bm]=bed.split(":").map(Number);const[wh,wm]=wake.split(":").map(Number);
+    let mins=(wh*60+wm)-(bh*60+bm);if(mins<0)mins+=24*60;return Math.round(mins/60*10)/10;
+  }
+  function logSleep(){
+    const hrs=calcSleepHrs(bedtime,wakeTime);if(!hrs)return;
+    setState(s=>({...s,habits:{...s.habits,sleep:hrs,bedtime,wakeTime}}));
+  }
+  const computedHrs=calcSleepHrs(bedtime,wakeTime);
+  async function getInsights(){
+    setAiLoading(true);setAiText("");
+    try{const r=await callAI(`Wellness coach. Water:${state.water}ml (goal ${state.goals.water}ml), Sleep:${state.habits.sleep}hrs (goal ${state.goals.sleep}hrs), Devotion:${state.habits.devotion}. Give 3 warm personalised habit tips.`);setAiText(r);}
+    catch{setAiText("Could not load.");}setAiLoading(false);
+  }
+
+  return html`<div>
+    <${Card}>
+      <${CT} icon="ti-checklist">Daily Habits<//>
+      ${[{key:"water",icon:"ti-droplet",color:"#185FA5",label:"Water intake",sub:`${state.water} / ${state.goals.water} ml`,can:state.water>=state.goals.water},
+         {key:"devotion",icon:"ti-book",color:"#3B6D11",label:"Daily devotion",sub:"Spiritual time today",can:true}
+      ].map(h=>html`<div key=${h.key} style=${{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 0",borderBottom:"0.5px solid rgba(0,0,0,0.08)"}}>
+        <div style=${{display:"flex",alignItems:"center",gap:10}}>
+          <i class=${"ti "+h.icon} style=${{fontSize:18,color:h.color}} aria-hidden="true"></i>
+          <div><p style=${{fontSize:14,fontWeight:500}}>${h.label}</p><p style=${{fontSize:12,color:"#666"}}>${h.sub}</p></div>
+        </div>
+        <${Toggle} on=${state.habits[h.key]} onClick=${()=>h.can&&setState(s=>({...s,habits:{...s.habits,[h.key]:!s.habits[h.key]}}))}/>
+      </div>`)}
+      <div style=${{padding:"10px 0"}}>
+        <div style=${{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
+          <i class="ti ti-moon" style=${{fontSize:18,color:"#534AB7"}} aria-hidden="true"></i>
+          <div>
+            <p style=${{fontSize:14,fontWeight:500}}>Sleep</p>
+            <p style=${{fontSize:12,color:"#666"}}>${state.habits.sleep>0?`${state.habits.sleep} hrs${state.habits.bedtime?" - "+state.habits.bedtime+" to "+state.habits.wakeTime:""`}:"Not logged"}</p>
+          </div>
+        </div>
+        <div style=${{display:"flex",flexWrap:"wrap",gap:8,alignItems:"flex-end"}}>
+          <div style=${{flex:"1 1 110px"}}>
+            <p style=${{fontSize:11,color:"#666",marginBottom:3}}>Bedtime</p>
+            <input type="time" value=${bedtime} onChange=${e=>setBedtime(e.target.value)} style=${{width:"100%",padding:"7px 10px",borderRadius:8,border:"0.5px solid rgba(0,0,0,0.2)",fontSize:14}}/>
+          </div>
+          <div style=${{flex:"1 1 110px"}}>
+            <p style=${{fontSize:11,color:"#666",marginBottom:3}}>Wake up</p>
+            <input type="time" value=${wakeTime} onChange=${e=>setWakeTime(e.target.value)} style=${{width:"100%",padding:"7px 10px",borderRadius:8,border:"0.5px solid rgba(0,0,0,0.2)",fontSize:14}}/>
+          </div>
+          <div style=${{display:"flex",flexDirection:"column",gap:4}}>
+            ${computedHrs!==null&&html`<p style=${{fontSize:12,color:"#534AB7",fontWeight:500}}>${computedHrs} hrs</p>`}
+            <${Btn} onClick=${logSleep} primary=${true} small=${true} disabled=${!computedHrs}>Save<//>
+          </div>
+        </div>
+        ${state.habits.sleep>0&&html`<div style=${{marginTop:8}}>
+          <${PBar} value=${state.habits.sleep} max=${state.goals.sleep} color="#534AB7"/>
+          <p style=${{fontSize:11,color:"#666",marginTop:3}}>${state.habits.sleep} / ${state.goals.sleep} hrs goal</p>
+        </div>`}
+      </div>
+    <//>
+    <${Card}>
+      <${CT} icon="ti-chart-bar">Today's Summary<//>
+      ${[{label:"Water goal",done:state.habits.water},{label:"Sleep logged",done:state.habits.sleep>0},{label:"Devotion",done:state.habits.devotion}].map((h,i,arr)=>html`<div key=${i} style=${{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 0",borderBottom:i<arr.length-1?"0.5px solid rgba(0,0,0,0.08)":"none"}}>
+        <span style=${{fontSize:14}}>${h.label}</span>
+        <${Tag} color=${h.done?"green":"amber"}>${h.done?"Done":"Pending"}<//>
+      </div>`)}
+    <//>
+    <${Card}><${CT} icon="ti-sparkles">AI Habit Insights<//>
+      <${Btn} onClick=${getInsights}>Get insights<//>
+      <${AIBox} text=${aiText} loading=${aiLoading}/>
+    <//>
+  </div>`;
+}
+
+// ── GOALS ──────────────────────────────────────────────────────────────────────
+function GoalsTab({state,setState}){
+  const [inputs,setInputs]=useState({calories:"",protein:"",water:"",steps:"",sleep:""});
+  const [aiText,setAiText]=useState("");const [aiLoading,setAiLoading]=useState(false);
+  const totalCals=state.foods.reduce((s,f)=>s+(f.calories||0),0);
+  const totalProt=state.foods.reduce((s,f)=>s+(f.protein||0),0);
+  const items=[
+    {label:"Calories",current:totalCals,goal:state.goals.calories,unit:"kcal",color:"#D85A30"},
+    {label:"Protein",current:totalProt,goal:state.goals.protein||150,unit:"g",color:"#534AB7"},
+    {label:"Water",current:state.water,goal:state.goals.water,unit:"ml",color:"#1D9E75"},
+    {label:"Steps",current:state.steps,goal:state.goals.steps,unit:"steps",color:"#185FA5"},
+    {label:"Sleep",current:state.habits.sleep,goal:state.goals.sleep,unit:"hrs",color:"#BA7517"}
+  ];
+  async function getAdvice(){
+    setAiLoading(true);setAiText("");
+    try{const r=await callAI(`Wellness coach. Stats: ${items.map(i=>`${i.label}:${i.current}/${i.goal}${i.unit}`).join(", ")}. Give 3-4 specific encouraging suggestions.`);setAiText(r);}
+    catch{setAiText("Could not load.");}setAiLoading(false);
+  }
+  return html`<div>
+    <${Card}>
+      <${CT} icon="ti-target">Set Daily Goals<//>
+      <div style=${{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:10,marginBottom:12}}>
+        ${[{key:"calories",label:"Calorie goal (kcal)",ph:state.goals.calories},{key:"protein",label:"Protein goal (g)",ph:state.goals.protein||150},{key:"water",label:"Water goal (ml)",ph:state.goals.water},{key:"steps",label:"Step goal",ph:state.goals.steps},{key:"sleep",label:"Sleep goal (hrs)",ph:state.goals.sleep}].map(f=>html`<div key=${f.key}>
+          <p style=${{fontSize:12,color:"#666",marginBottom:4}}>${f.label}</p>
+          <${Inp} value=${inputs[f.key]} onChange=${e=>setInputs(p=>({...p,[f.key]:e.target.value}))} type="number" placeholder=${String(f.ph)}/>
+        </div>`)}
+      </div>
+      <${Btn} onClick=${()=>{setState(s=>({...s,goals:{...s.goals,calories:parseInt(inputs.calories)||s.goals.calories,protein:parseInt(inputs.protein)||s.goals.protein||150,water:parseInt(inputs.water)||s.goals.water,steps:parseInt(inputs.steps)||s.goals.steps,sleep:parseFloat(inputs.sleep)||s.goals.sleep}}));setInputs({calories:"",protein:"",water:"",steps:"",sleep:""}); }} primary=${true}>Save goals<//>
+    <//>
+    <${Card}>
+      <${CT} icon="ti-chart-dots">Today's Progress<//>
+      ${items.map((item,i)=>{const pct=Math.min(100,item.goal>0?Math.round(item.current/item.goal*100):0);return html`<div key=${i} style=${{marginBottom:12}}>
+        <div style=${{display:"flex",justifyContent:"space-between",fontSize:13,marginBottom:2}}>
+          <span>${item.label}</span>
+          <span style=${{color:"#666"}}>${item.current.toLocaleString()} / ${item.goal.toLocaleString()} ${item.unit} (${pct}%)</span>
+        </div>
+        <${PBar} value=${item.current} max=${item.goal} color=${item.color}/>
+      </div>`;})}
+    <//>
+    <${Card}><${CT} icon="ti-sparkles">Personalised Advice<//>
+      <${Btn} onClick=${getAdvice}>Get advice<//>
+      <${AIBox} text=${aiText} loading=${aiLoading}/>
+    <//>
+  </div>`;
+}
+
+// ── WEIGHT ─────────────────────────────────────────────────────────────────────
+function WeightTab({state,setState}){
+  const [weightInput,setWeightInput]=useState("");const [goalInput,setGoalInput]=useState("");const [heightInput,setHeightInput]=useState("");const [unit,setUnit]=useState("kg");
+  const wLog=state.weightLog||[];
+  const latest=wLog.length?wLog[wLog.length-1]:null;
+  const latestKg=latest?.weight||null;const hCm=state.heightCm;const gW=state.goalWeight;
+  function bmi(kg,cm){if(!kg||!cm)return null;return(kg/((cm/100)**2)).toFixed(1);}
+  function bmiCat(b){if(!b)return null;const n=parseFloat(b);if(n<18.5)return{label:"Underweight",color:"#185FA5"};if(n<25)return{label:"Healthy",color:"#1D9E75"};if(n<30)return{label:"Overweight",color:"#BA7517"};return{label:"Obese",color:"#A32D2D"};}
+  function logWeight(){let kg=parseFloat(weightInput);if(!kg)return;if(unit==="lbs")kg*=0.453592;if(unit==="st")kg*=6.35029;kg=Math.round(kg*10)/10;const ex=wLog.findIndex(e=>e.date===TODAY);const nl=ex>=0?wLog.map((e,i)=>i===ex?{...e,weight:kg}:e):[...wLog,{date:TODAY,weight:kg}];setState(s=>({...s,weightLog:nl}));setWeightInput("");}
+  const curBMI=bmi(latestKg,hCm);const cat=bmiCat(curBMI);
+  const toGoal=latestKg&&gW?(latestKg-gW).toFixed(1):null;
+  const last20=wLog.slice(-20);
+  const maxW=last20.length?Math.max(...last20.map(e=>e.weight)):80;
+  const minW=last20.length?Math.min(...last20.map(e=>e.weight)):50;
+  const range=Math.max(maxW-minW,5);const svgW=Math.max(300,last20.length*44);
+
+  return html`<div>
+    <div style=${{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(120px,1fr))",gap:8,marginBottom:12}}>
+      <${MCard} label="Current weight" value=${latestKg?`${latestKg} kg`:"--"} unit=${hCm?"BMI "+(curBMI||"--"):"Add height for BMI"} color="#D85A30"/>
+      <${MCard} label="Goal weight" value=${gW?`${gW} kg`:"--"} unit=${toGoal?(parseFloat(toGoal)>0?`${toGoal}kg to lose`:`${Math.abs(parseFloat(toGoal))}kg to gain`):"Set a goal"}/>
+      ${cat&&html`<${MCard} label="BMI status" value=${curBMI} unit=${cat.label} color=${cat.color}/>`}
+      <${MCard} label="Entries" value=${wLog.length} unit="weigh-ins logged"/>
+    </div>
+    <${Card}>
+      <${CT} icon="ti-scale">Log Weight<//>
+      <div style=${{display:"flex",gap:8,marginBottom:10,flexWrap:"wrap",alignItems:"center"}}>
+        <${Inp} value=${weightInput} onChange=${e=>setWeightInput(e.target.value)} type="number" step="0.1" placeholder="Enter weight" style=${{flex:"1 1 100px"}}/>
+        <${Sel} value=${unit} onChange=${e=>setUnit(e.target.value)}>
+          <option value="kg">kg</option><option value="lbs">lbs</option><option value="st">stone</option>
+        <//>
+        <${Btn} onClick=${logWeight} primary=${true}>+ Log<//>
+      </div>
+    <//>
+    <${Card}>
+      <${CT} icon="ti-settings">Settings<//>
+      <div style=${{display:"flex",flexWrap:"wrap",gap:10}}>
+        <div style=${{flex:"1 1 130px"}}>
+          <p style=${{fontSize:12,color:"#666",marginBottom:4}}>Height (cm)</p>
+          <${Inp} value=${heightInput} onChange=${e=>setHeightInput(e.target.value)} type="number" placeholder=${hCm?String(hCm):"e.g. 165"}/>
+        </div>
+        <div style=${{flex:"1 1 130px"}}>
+          <p style=${{fontSize:12,color:"#666",marginBottom:4}}>Goal weight (kg)</p>
+          <${Inp} value=${goalInput} onChange=${e=>setGoalInput(e.target.value)} type="number" placeholder=${gW?String(gW):"e.g. 65"}/>
+        </div>
+        <div style=${{display:"flex",alignItems:"flex-end"}}>
+          <${Btn} onClick=${()=>{setState(s=>({...s,heightCm:parseFloat(heightInput)||s.heightCm,goalWeight:parseFloat(goalInput)||s.goalWeight}));setHeightInput("");setGoalInput("");}}>Save<//>
+        </div>
+      </div>
+    <//>
+    ${last20.length>=2&&html`<${Card}>
+      <${CT} icon="ti-chart-line">Weight Trend<//>
+      <div style=${{overflowX:"auto"}}>
+        <svg width=${svgW} height=${150} style=${{display:"block"}}>
+          ${last20.map((entry,i,arr)=>{
+            const x=arr.length>1?(i/(arr.length-1))*(svgW-40)+20:svgW/2;
+            const y=110-((entry.weight-minW)/range)*90;
+            const next=arr[i+1];
+            const nx=next?((i+1)/(arr.length-1))*(svgW-40)+20:null;
+            const ny=next?110-((next.weight-minW)/range)*90:null;
+            return html`<g key=${i}>
+              ${next&&html`<line x1=${x} y1=${y} x2=${nx} y2=${ny} stroke="#534AB7" stroke-width="2" opacity="0.6"/>`}
+              <circle cx=${x} cy=${y} r=${4} fill="#534AB7"/>
+              <text x=${x} y=${y-8} text-anchor="middle" font-size=${10} fill="#666">${entry.weight}</text>
+              ${(i===0||i===arr.length-1)&&html`<text x=${x} y=${135} text-anchor="middle" font-size=${9} fill="#666">${entry.date.slice(5)}</text>`}
+            </g>`;
+          })}
+          ${gW&&minW<=gW&&gW<=maxW&&(()=>{const gy=110-((gW-minW)/range)*90;return html`<line x1=${20} y1=${gy} x2=${svgW-20} y2=${gy} stroke="#1D9E75" stroke-width="1.5" stroke-dasharray="4,4" opacity="0.7"/>`;})()}
+        </svg>
+      </div>
+    <//>`}
+    <${Card}>
+      <${CT} icon="ti-list">Weight Log<//>
+      ${!wLog.length?html`<p style=${{fontSize:13,color:"#666"}}>No entries yet.</p>`:
+        [...wLog].reverse().map((e,i)=>html`<div key=${i} style=${{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 0",borderBottom:i<wLog.length-1?"0.5px solid rgba(0,0,0,0.08)":"none"}}>
+          <div><p style=${{fontSize:14,fontWeight:500}}>${e.weight} kg</p><p style=${{fontSize:12,color:"#666"}}>${e.date}${hCm?" - BMI "+bmi(e.weight,hCm):""}</p></div>
+          <${Btn} onClick=${()=>setState(s=>({...s,weightLog:s.weightLog.filter((_,j)=>j!==wLog.length-1-i)}))} danger=${true} small=${true}>x<//>
+        </div>`)}
+    <//>
+  </div>`;
+}
+
+// ── CYCLE ──────────────────────────────────────────────────────────────────────
+function computeCycleDay(cycle){
+  if(!cycle.periodDates||!cycle.periodDates.length)return null;
+  const sorted=[...cycle.periodDates].sort((a,b)=>a.start>b.start?-1:1);
+  const lastStart=new Date(sorted[0].start);
+  const diff=Math.floor((new Date()-lastStart)/86400000);
+  const avgLen=cycle.avgCycleLength||28;
+  const day=diff%avgLen;
+  const phases=[
+    {name:"Menstrual",color:"#993556",bg:"#FBEAF0",border:"#F4C0D1",emoji:"M",desc:"Rest and restore. Your body is working hard."},
+    {name:"Follicular",color:"#0F6E56",bg:"#E1F5EE",border:"#9FE1CB",emoji:"F",desc:"Energy rising. Great time to try new workouts."},
+    {name:"Ovulation",color:"#534AB7",bg:"#EEEDFE",border:"#CECBF6",emoji:"O",desc:"Peak energy and strength. Push your limits!"},
+    {name:"Luteal",color:"#854F0B",bg:"#FAEEDA",border:"#FAC775",emoji:"L",desc:"Wind down. Focus on consistency over intensity."}
+  ];
+  const d=cycle.avgPeriodDuration||5;
+  const phase=day<d?phases[0]:day<13?phases[1]:day<16?phases[2]:phases[3];
+  return{...phase,dayOfCycle:day+1,nextPeriodIn:avgLen-day,avgLen};
+}
+
+function CycleTab({state,setState}){
+  const [section,setSection]=useState("overview");
+  const [periodStart,setPeriodStart]=useState("");const [periodEnd,setPeriodEnd]=useState("");
+  const [ovDate,setOvDate]=useState(TODAY);
+  const [sympDate,setSympDate]=useState(TODAY);const [checked,setChecked]=useState([]);const [sympNotes,setSympNotes]=useState("");
+  const [avgLen,setAvgLen]=useState(String(state.cycle.avgCycleLength||28));
+  const [avgDur,setAvgDur]=useState(String(state.cycle.avgPeriodDuration||5));
+  const [aiText,setAiText]=useState("");const [aiLoading,setAiLoading]=useState(false);
+  const cycle=state.cycle;const info=computeCycleDay(cycle);
+
+  function logPeriod(){
+    if(!periodStart)return;
+    const entry={start:periodStart,end:periodEnd||null};
+    const existing=(cycle.periodDates||[]).findIndex(p=>p.start===periodStart);
+    let nd=existing>=0?cycle.periodDates.map((p,i)=>i===existing?entry:p):[...(cycle.periodDates||[]),entry];
+    let newAvg=cycle.avgCycleLength;
+    if(nd.length>=2){const sorted=[...nd].sort((a,b)=>a.start>b.start?1:-1);const diffs=[];for(let i=1;i<sorted.length;i++){const d=Math.floor((new Date(sorted[i].start)-new Date(sorted[i-1].start))/86400000);if(d>0&&d<60)diffs.push(d);}if(diffs.length)newAvg=Math.round(diffs.reduce((a,b)=>a+b,0)/diffs.length);}
+    setState(s=>({...s,cycle:{...s.cycle,periodDates:nd,avgCycleLength:newAvg}}));
+    setPeriodStart("");setPeriodEnd("");
+  }
+  function logOvulation(){if(!ovDate)return;if(!(cycle.ovulationDates||[]).includes(ovDate))setState(s=>({...s,cycle:{...s.cycle,ovulationDates:[...(s.cycle.ovulationDates||[]),ovDate]}}));setOvDate(TODAY);}
+  function saveSymptoms(){setState(s=>({...s,cycle:{...s.cycle,symptoms:{...(s.cycle.symptoms||{}),[sympDate]:{checklist:checked,notes:sympNotes}}}}));setChecked([]);setSympNotes("");}
+  async function getAdvice(){
+    if(!info)return;setAiLoading(true);setAiText("");
+    const todaySymp=(cycle.symptoms||{})[TODAY];
+    const symStr=todaySymp?`Today symptoms: ${todaySymp.checklist.join(", ")}${todaySymp.notes?". "+todaySymp.notes:""}.`:"No symptoms today.";
+    try{const r=await callAI(`Women's health expert. User is in ${info.name} phase (day ${info.dayOfCycle} of ${info.avgLen}). ${symStr} Recommend: 1) Best workouts, 2) Foods and nutrients, 3) Self-care and mood tips. Practical and empowering, 5-6 sentences.`);setAiText(r);}
+    catch{setAiText("Could not load.");}setAiLoading(false);
+  }
+
+  const secs=[{id:"overview",label:"Overview"},{id:"log",label:"Log Period"},{id:"ovulation",label:"Ovulation"},{id:"symptoms",label:"Symptoms"},{id:"history",label:"History"}];
+
+  return html`<div>
+    <div style=${{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12}}>
+      ${secs.map(s=>html`<${Chip} key=${s.id} label=${s.label} active=${section===s.id} onClick=${()=>setSection(s.id)}/>`)}
+    </div>
+    ${section==="overview"&&html`<div>
+      ${info?html`<div style=${{background:info.bg,border:`0.5px solid ${info.border}`,borderRadius:12,padding:"1rem 1.25rem",marginBottom:12}}>
+        <p style=${{fontSize:12,color:"#666",marginBottom:4}}>Day ${info.dayOfCycle} of ~${info.avgLen} day cycle</p>
+        <p style=${{fontSize:24,fontWeight:500,color:info.color}}>${info.name} Phase</p>
+        <p style=${{fontSize:13,color:info.color,marginTop:6}}>Next period in approximately ${info.nextPeriodIn} days</p>
+        <div style=${{display:"flex",gap:10,marginTop:10,flexWrap:"wrap"}}>
+          <span style=${{fontSize:12,color:"#666"}}>Avg cycle: ${info.avgLen} days</span>
+          <span style=${{fontSize:12,color:"#666"}}>Periods logged: ${(cycle.periodDates||[]).length}</span>
+        </div>
+      </div>`:html`<${Card}><p style=${{fontSize:14,color:"#666"}}>Log your first period in the Log Period tab to see your cycle overview.</p><//>`}
+      <${Card}>
+        <${CT} icon="ti-sparkles">AI Phase Recommendations<//>
+        ${!info?html`<p style=${{fontSize:13,color:"#666"}}>Log a period first.</p>`:html`<div>
+          <${Btn} onClick=${getAdvice} disabled=${aiLoading}>${aiLoading?"Thinking...":"Get food, workout and self-care advice"}<//>
+          <${AIBox} text=${aiText} loading=${aiLoading}/>
+        </div>`}
+      <//>
+    </div>`}
+    ${section==="log"&&html`<${Card}>
+      <${CT} icon="ti-calendar-plus">Log Period<//>
+      <p style=${{fontSize:13,color:"#666",marginBottom:12}}>Enter your period dates. The app auto-calculates your average cycle length from history.</p>
+      <div style=${{display:"flex",flexWrap:"wrap",gap:10,marginBottom:12}}>
+        <div style=${{flex:"1 1 140px"}}>
+          <p style=${{fontSize:12,color:"#666",marginBottom:4}}>Period start *</p>
+          <input type="date" value=${periodStart} onChange=${e=>setPeriodStart(e.target.value)} style=${{width:"100%",padding:"8px 10px",borderRadius:8,border:"0.5px solid rgba(0,0,0,0.2)",fontSize:14,boxSizing:"border-box"}}/>
+        </div>
+        <div style=${{flex:"1 1 140px"}}>
+          <p style=${{fontSize:12,color:"#666",marginBottom:4}}>Period end (optional)</p>
+          <input type="date" value=${periodEnd} onChange=${e=>setPeriodEnd(e.target.value)} style=${{width:"100%",padding:"8px 10px",borderRadius:8,border:"0.5px solid rgba(0,0,0,0.2)",fontSize:14,boxSizing:"border-box"}}/>
+        </div>
+      </div>
+      <${Btn} onClick=${logPeriod} primary=${true} disabled=${!periodStart}>+ Log period<//>
+      <div style=${{marginTop:16}}>
+        <p style=${{fontSize:13,fontWeight:500,marginBottom:4}}>Avg settings (auto-updated from history):</p>
+        <div style=${{display:"flex",gap:10,flexWrap:"wrap"}}>
+          <div style=${{flex:"1 1 120px"}}><p style=${{fontSize:12,color:"#666",marginBottom:4}}>Cycle length (days)</p><${Inp} value=${avgLen} onChange=${e=>setAvgLen(e.target.value)} type="number" min="21" max="45"/></div>
+          <div style=${{flex:"1 1 120px"}}><p style=${{fontSize:12,color:"#666",marginBottom:4}}>Period duration (days)</p><${Inp} value=${avgDur} onChange=${e=>setAvgDur(e.target.value)} type="number" min="1" max="10"/></div>
+          <div style=${{display:"flex",alignItems:"flex-end"}}><${Btn} onClick=${()=>setState(s=>({...s,cycle:{...s.cycle,avgCycleLength:parseInt(avgLen)||28,avgPeriodDuration:parseInt(avgDur)||5}}))}>Save<///></div>
+        </div>
+      </div>
+    <//>`}
+    ${section==="ovulation"&&html`<${Card}>
+      <${CT} icon="ti-sparkles">Log Ovulation<//>
+      <p style=${{fontSize:13,color:"#666",marginBottom:12}}>Mark days you think you ovulated (based on discharge, temperature, or OPK test).</p>
+      <div style=${{display:"flex",gap:8,marginBottom:12,alignItems:"center"}}>
+        <input type="date" value=${ovDate} onChange=${e=>setOvDate(e.target.value)} style=${{flex:1,padding:"8px 10px",borderRadius:8,border:"0.5px solid rgba(0,0,0,0.2)",fontSize:14}}/>
+        <${Btn} onClick=${logOvulation} primary=${true}>+ Log<//>
+      </div>
+      ${(cycle.ovulationDates||[]).length>0&&html`<div>
+        <p style=${{fontSize:13,fontWeight:500,marginBottom:8}}>Logged ovulation dates:</p>
+        ${[...(cycle.ovulationDates||[])].sort((a,b)=>b>a?1:-1).slice(0,6).map((d,i)=>html`<div key=${i} style=${{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0",borderBottom:"0.5px solid rgba(0,0,0,0.08)"}}>
+          <span style=${{fontSize:14}}>${d}</span>
+          <${Btn} onClick=${()=>setState(s=>({...s,cycle:{...s.cycle,ovulationDates:s.cycle.ovulationDates.filter(x=>x!==d)}}))} danger=${true} small=${true}>x<//>
+        </div>`)}
+      </div>`}
+    <//>`}
+    ${section==="symptoms"&&html`<${Card}>
+      <${CT} icon="ti-stethoscope">Log Symptoms<//>
+      <div style=${{marginBottom:10}}>
+        <p style=${{fontSize:12,color:"#666",marginBottom:4}}>Date</p>
+        <input type="date" value=${sympDate} onChange=${e=>setSympDate(e.target.value)} style=${{padding:"8px 10px",borderRadius:8,border:"0.5px solid rgba(0,0,0,0.2)",fontSize:14,width:"100%",boxSizing:"border-box"}}/>
+      </div>
+      <p style=${{fontSize:13,fontWeight:500,marginBottom:8}}>Symptoms:</p>
+      <div style=${{display:"flex",flexWrap:"wrap",gap:6,marginBottom:12}}>
+        ${SYMPTOM_LIST.map(sym=>html`<${Chip} key=${sym} label=${sym} active=${checked.includes(sym)} onClick=${()=>setChecked(prev=>prev.includes(sym)?prev.filter(x=>x!==sym):[...prev,sym])}/>`)}
+      </div>
+      <p style=${{fontSize:12,color:"#666",marginBottom:4}}>Additional notes</p>
+      <textarea value=${sympNotes} onChange=${e=>setSympNotes(e.target.value)} placeholder="Any other observations..." rows=${3} style=${{width:"100%",padding:"8px 10px",borderRadius:8,border:"0.5px solid rgba(0,0,0,0.2)",fontSize:14,resize:"vertical",boxSizing:"border-box",marginBottom:10}}></textarea>
+      <${Btn} onClick=${saveSymptoms} primary=${true}>Save symptoms<//>
+      ${(cycle.symptoms||{})[sympDate]&&html`<div style=${{marginTop:12,padding:10,background:"#f8f8f5",borderRadius:8}}>
+        <p style=${{fontSize:12,fontWeight:500,marginBottom:4}}>Saved for ${sympDate}:</p>
+        <div style=${{display:"flex",flexWrap:"wrap",gap:4}}>
+          ${(cycle.symptoms[sympDate].checklist||[]).map(s=>html`<${Tag} key=${s} color="pink">${s}<//>`) }
+        </div>
+        ${cycle.symptoms[sympDate].notes&&html`<p style=${{fontSize:12,color:"#666",marginTop:6}}>${cycle.symptoms[sympDate].notes}</p>`}
+      </div>`}
+    <//>`}
+    ${section==="history"&&html`<${Card}>
+      <${CT} icon="ti-history">Period History<//>
+      ${!(cycle.periodDates||[]).length?html`<p style=${{fontSize:13,color:"#666"}}>No periods logged yet.</p>`:
+        [...(cycle.periodDates||[])].sort((a,b)=>b.start>a.start?1:-1).map((p,i,arr)=>{
+          const duration=p.end?Math.floor((new Date(p.end)-new Date(p.start))/86400000)+1:null;
+          const nextStart=arr[i+1]?.start;
+          const cycleLen=nextStart?Math.floor((new Date(p.start)-new Date(nextStart))/86400000):null;
+          return html`<div key=${i} style=${{padding:"10px 0",borderBottom:i<arr.length-1?"0.5px solid rgba(0,0,0,0.08)":"none"}}>
+            <div style=${{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+              <div>
+                <p style=${{fontSize:14,fontWeight:500}}>${p.start}${p.end?" to "+p.end:""}</p>
+                <p style=${{fontSize:12,color:"#666"}}>${duration?duration+" days":"End not logged"}${cycleLen?" - Cycle: "+cycleLen+" days":""}</p>
+              </div>
+              <${Btn} onClick=${()=>setState(s=>({...s,cycle:{...s.cycle,periodDates:s.cycle.periodDates.filter((_,j)=>j!==(arr.length-1-i))}}))} danger=${true} small=${true}>x<//>
+            </div>
+          </div>`;
+        })}
+    <//>`}
+  </div>`;
+}
+
+// ── ROOT APP ───────────────────────────────────────────────────────────────────
+function App(){
+  const [state,setStateRaw]=useState(loadState);
+  const [activeTab,setActiveTab]=useState("nutrition");
+
+  const setState=useCallback((updater)=>{
+    setStateRaw(prev=>{
+      const next=typeof updater==="function"?updater(prev):{...prev,...updater};
+      try{localStorage.setItem(STORAGE_KEY,JSON.stringify(next));}catch{}
+      return next;
+    });
+  },[]);
+
+  const dateStr=new Date().toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
+
+  return html`<div style=${{maxWidth:700,margin:"0 auto",paddingBottom:60}}>
+    <div style=${{padding:"1.25rem 1rem 0"}}>
+      <h1 style=${{fontSize:20,fontWeight:500}}>Wellness Hub</h1>
+      <p style=${{fontSize:13,color:"#666",marginTop:2}}>${dateStr}</p>
+    </div>
+    <div style=${{display:"flex",gap:6,padding:"0.75rem 1rem",overflowX:"auto",scrollbarWidth:"none"}}>
+      ${TABS.map(t=>html`<button key=${t.id} onClick=${()=>setActiveTab(t.id)} style=${{whiteSpace:"nowrap",padding:"6px 12px",borderRadius:20,border:"0.5px solid rgba(0,0,0,0.2)",background:activeTab===t.id?"var(--color-text-primary,#1a1a1a)":"var(--color-background-primary,#fff)",color:activeTab===t.id?"var(--color-background-primary,#fff)":"#666",fontSize:13,cursor:"pointer",display:"inline-flex",alignItems:"center",gap:5}}>
+        <i class=${"ti "+t.icon} aria-hidden="true"></i> ${t.label}
+      </button>`)}
+    </div>
+    <div style=${{padding:"0 1rem"}}>
+      ${activeTab==="nutrition"&&html`<${NutritionTab} state=${state} setState=${setState}/>`}
+      ${activeTab==="workouts"&&html`<${WorkoutsTab} state=${state} setState=${setState}/>`}
+      ${activeTab==="steps"&&html`<${StepsTab} state=${state} setState=${setState}/>`}
+      ${activeTab==="habits"&&html`<${HabitsTab} state=${state} setState=${setState}/>`}
+      ${activeTab==="goals"&&html`<${GoalsTab} state=${state} setState=${setState}/>`}
+      ${activeTab==="weight"&&html`<${WeightTab} state=${state} setState=${setState}/>`}
+      ${activeTab==="cycle"&&html`<${CycleTab} state=${state} setState=${setState}/>`}
+    </div>
+  </div>`;
+}
+
+const root=ReactDOM.createRoot(document.getElementById("root"));
+root.render(html`<${App}/>`);
+</script>
+</body>
+</html>
